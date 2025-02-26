@@ -3,7 +3,9 @@
 pub mod prelude;
 
 pub mod assets;
+pub mod messages;
 pub mod orders;
+pub mod price_snapshot;
 pub mod trades;
 pub mod user_balances;
 pub mod users;

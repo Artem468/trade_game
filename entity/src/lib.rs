@@ -7,3 +7,5 @@ pub mod orders;
 pub mod trades;
 pub mod user_balances;
 pub mod users;
+pub mod messages;
+pub mod price_snapshot;

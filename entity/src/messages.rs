@@ -3,48 +3,35 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "trades")]
+#[sea_orm(table_name = "messages")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
-    pub user_id: i32,
-    pub asset_id: i32,
-    pub trade_type: String,
-    pub price: Decimal,
-    pub amount: Decimal,
+    pub from_id: i32,
+    pub recipient_id: i32,
+    #[sea_orm(column_type = "Text")]
+    pub text: String,
     pub created_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
-        belongs_to = "super::assets::Entity",
-        from = "Column::AssetId",
-        to = "super::assets::Column::Id",
-        on_update = "NoAction",
-        on_delete = "Cascade"
-    )]
-    Assets,
-    #[sea_orm(
         belongs_to = "super::users::Entity",
-        from = "Column::UserId",
+        from = "Column::FromId",
         to = "super::users::Column::Id",
         on_update = "NoAction",
         on_delete = "Cascade"
     )]
-    Users,
-}
-
-impl Related<super::assets::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Assets.def()
-    }
-}
-
-impl Related<super::users::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Users.def()
-    }
+    Users2,
+    #[sea_orm(
+        belongs_to = "super::users::Entity",
+        from = "Column::RecipientId",
+        to = "super::users::Column::Id",
+        on_update = "NoAction",
+        on_delete = "Cascade"
+    )]
+    Users1,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

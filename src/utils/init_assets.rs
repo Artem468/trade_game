@@ -1,8 +1,15 @@
+use sea_orm::PaginatorTrait;
 use entity::assets;
-use sea_orm::EntityTrait;
 use sea_orm::{DbConn, Set};
+use sea_orm::EntityTrait;
 
-pub async fn initialize_default_assets(db: &DbConn) -> Result<(), sea_orm::DbErr> {
+pub async fn initialize_assets(db: &DbConn) -> Result<(), sea_orm::DbErr> {
+    let count = assets::Entity::find().count(db).await?;
+    if count > 0 {
+        println!("Assets table is not empty. Skipping seeding.");
+        return Ok(());
+    }
+    
     let assets = vec![
         assets::ActiveModel {
             symbol: Set("AAPL".to_string()),
@@ -67,10 +74,10 @@ pub async fn initialize_default_assets(db: &DbConn) -> Result<(), sea_orm::DbErr
     ];
     
     for asset in assets {
-        let res = assets::Entity::insert(asset).exec(db).await;
-        if res.is_err() {
-            eprintln!("Error inserting asset: {:?}", res);
-        }
+        match assets::Entity::insert(asset).exec(db).await {
+            Ok(_) => {}
+            Err(_) => {}
+        };
     }
 
     Ok(())

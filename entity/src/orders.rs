@@ -9,43 +9,13 @@ pub struct Model {
     pub id: i32,
     pub user_id: i32,
     pub asset_id: i32,
-    pub order_type: OrderType,
-    pub order_side: OrderSide,
+    pub order_type: String,
+    pub order_side: String,
     pub price: Option<Decimal>,
     pub amount: Decimal,
-    pub status: OrderStatus,
+    pub status: String,
     pub created_at: DateTime,
     pub updated_at: DateTime,
-}
-
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
-#[sea_orm(rs_type = "String", db_type = "Enum")]
-pub enum OrderType {
-    #[sea_orm(string_value = "market")]
-    Market,
-    #[sea_orm(string_value = "limit")]
-    Limit,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
-#[sea_orm(rs_type = "String", db_type = "Enum")]
-pub enum OrderSide {
-    #[sea_orm(string_value = "buy")]
-    Buy,
-    #[sea_orm(string_value = "sell")]
-    Sell,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
-#[sea_orm(rs_type = "String", db_type = "Enum")]
-pub enum OrderStatus {
-    #[sea_orm(string_value = "open")]
-    Open,
-    #[sea_orm(string_value = "filled")]
-    Filled,
-    #[sea_orm(string_value = "cancelled")]
-    Cancelled,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

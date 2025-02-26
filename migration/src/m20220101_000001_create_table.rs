@@ -15,6 +15,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Users::Username).string().not_null().unique_key())
                     .col(ColumnDef::new(Users::Email).string().not_null().unique_key())
                     .col(ColumnDef::new(Users::HashedPassword).string().not_null())
+                    .col(ColumnDef::new(Users::Balance).decimal().not_null().default(10000))
                     .col(ColumnDef::new(Users::CreatedAt).timestamp().not_null().default(Expr::current_timestamp()))
                     .to_owned(),
             )
@@ -86,6 +87,36 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        manager
+            .create_table(
+                Table::create()
+                    .table(Messages::Table)
+                    .if_not_exists()
+                    .col(ColumnDef::new(Messages::Id).integer().not_null().auto_increment().primary_key())
+                    .col(ColumnDef::new(Messages::FromId).integer().not_null())
+                    .col(ColumnDef::new(Messages::RecipientId).integer().not_null())
+                    .col(ColumnDef::new(Messages::Text).text().not_null())
+                    .col(ColumnDef::new(Messages::CreatedAt).timestamp().not_null().default(Expr::current_timestamp()))
+                    .foreign_key(ForeignKey::create().from(Messages::Table, Messages::FromId).to(Users::Table, Users::Id).on_delete(ForeignKeyAction::Cascade))
+                    .foreign_key(ForeignKey::create().from(Messages::Table, Messages::RecipientId).to(Users::Table, Users::Id).on_delete(ForeignKeyAction::Cascade))
+                    .to_owned(),
+            )
+            .await?;
+        
+        manager
+            .create_table(
+                Table::create()
+                    .table(PriceSnapshot::Table)
+                    .if_not_exists()
+                    .col(ColumnDef::new(PriceSnapshot::Id).integer().not_null().auto_increment().primary_key())
+                    .col(ColumnDef::new(PriceSnapshot::AssetId).integer().not_null())
+                    .col(ColumnDef::new(PriceSnapshot::Price).integer().not_null())
+                    .col(ColumnDef::new(PriceSnapshot::CreatedAt).timestamp().not_null().default(Expr::current_timestamp()))
+                    .foreign_key(ForeignKey::create().from(PriceSnapshot::Table, PriceSnapshot::AssetId).to(Assets::Table, Assets::Id).on_delete(ForeignKeyAction::Cascade))
+                    .to_owned(),
+            )
+            .await?;
+
         Ok(())
     }
 
@@ -95,6 +126,8 @@ impl MigrationTrait for Migration {
         manager.drop_table(Table::drop().table(UserBalances::Table).to_owned()).await?;
         manager.drop_table(Table::drop().table(Assets::Table).to_owned()).await?;
         manager.drop_table(Table::drop().table(Users::Table).to_owned()).await?;
+        manager.drop_table(Table::drop().table(Messages::Table).to_owned()).await?;
+        manager.drop_table(Table::drop().table(PriceSnapshot::Table).to_owned()).await?;
         Ok(())
     }
 }
@@ -107,6 +140,7 @@ enum Users {
     Username,
     Email,
     HashedPassword,
+    Balance,
     CreatedAt,
 }
 
@@ -152,4 +186,23 @@ enum Orders {
     Status,
     CreatedAt,
     UpdatedAt,
+}
+
+#[derive(DeriveIden)]
+enum Messages {
+    Table,
+    Id,
+    FromId,
+    RecipientId,
+    Text,
+    CreatedAt,
+}
+
+#[derive(DeriveIden)]
+enum PriceSnapshot {
+    Table,
+    Id,
+    AssetId,
+    Price,
+    CreatedAt,
 }

@@ -3,15 +3,12 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "trades")]
+#[sea_orm(table_name = "price_snapshot")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
-    pub user_id: i32,
     pub asset_id: i32,
-    pub trade_type: String,
-    pub price: Decimal,
-    pub amount: Decimal,
+    pub price: i32,
     pub created_at: DateTime,
 }
 
@@ -25,25 +22,11 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     Assets,
-    #[sea_orm(
-        belongs_to = "super::users::Entity",
-        from = "Column::UserId",
-        to = "super::users::Column::Id",
-        on_update = "NoAction",
-        on_delete = "Cascade"
-    )]
-    Users,
 }
 
 impl Related<super::assets::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Assets.def()
-    }
-}
-
-impl Related<super::users::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Users.def()
     }
 }
 
