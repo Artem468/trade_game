@@ -3,33 +3,23 @@ mod routes;
 mod macros;
 mod traits;
 
-use std::sync::Arc;
-use actix_web::{web, App, HttpServer};
-use dotenv::dotenv;
-use lazy_static::lazy_static;
-use redis::Client;
-use sea_orm::DbConn;
-use tokio::sync::RwLock;
-use tokio::task;
-use crate::routes::market;
 use crate::routes::prelude::*;
+use crate::routes::{market, trades_history};
 use crate::utils::establish_connection::establish_connection;
 use crate::utils::init_assets::initialize_assets;
 use crate::utils::price_calculation::calculate_asset_prices;
 use crate::utils::seed_assets::seed_assets;
+use actix_web::{web, App, HttpServer};
+use dotenv::dotenv;
+use redis::Client;
+use sea_orm::DbConn;
+use std::sync::Arc;
+use tokio::task;
 
 struct AppState {
     db: Arc<DbConn>,
     cache: Arc<Client>,
     jwt_secret: String,
-}
-
-pub struct GlobalData {
-    db: Arc<DbConn>
-}
-
-lazy_static! {
-    static ref GLOBALDATA: RwLock<Option<GlobalData>> = RwLock::new(None);
 }
 
 pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
@@ -44,8 +34,6 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     seed_assets(db.as_ref()).await?;
 
     task::spawn(calculate_asset_prices(db.as_ref().clone(), cache.as_ref().clone(), 10));
-    
-    init_global_data(db.clone()).await;
     
     let app_state = web::Data::new(AppState {
         db,
@@ -63,6 +51,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .route("/api/v1/auth/login", web::post().to(login::login))
             .route("/api/v1/auth/refresh", web::post().to(refresh::refresh))
             .route("/api/v1/user/assets", web::get().to(user_assets::user_assets))
+            .route("/api/v1/trades/history", web::get().to(trades_history::trades_history))
             .route("/api/v1/market/data", web::get().to(market::market))
     })
         .bind(format!("{host}:{port}"))?
@@ -70,8 +59,4 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     Ok(())
-}
-
-async fn init_global_data(db: Arc<DbConn>) {
-    *GLOBALDATA.write().await = Some(GlobalData { db });
 }
