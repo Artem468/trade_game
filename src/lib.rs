@@ -5,7 +5,7 @@ mod traits;
 
 use crate::routes::prelude::*;
 use crate::routes::private_chat::ChatSession;
-use crate::routes::{market, trades_history};
+use crate::routes::{chat_history, market, trades_history};
 use crate::utils::establish_connection::establish_connection;
 use crate::utils::init_assets::initialize_assets;
 use crate::utils::price_calculation::calculate_asset_prices;
@@ -64,8 +64,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .route("/api/v1/user/assets", web::get().to(user_assets::user_assets))
             .route("/api/v1/trades/history", web::get().to(trades_history::trades_history))
             .route("/api/v1/market/data", web::get().to(market::market))
-            .route("/api/v1/privateChat/{id}", web::get().to(AppState::chat_ws))
-            // .route("/api/v1/getChatHistory/{id}", web::get().to(AppState::chat_ws))
+            .route("/api/v1/chat/private/{id}", web::get().to(AppState::chat_ws))
+            .route("/api/v1/chat/getHistory/{id}", web::get().to(chat_history::chat_history))
     })
         .bind(format!("{host}:{port}"))?
         .run()

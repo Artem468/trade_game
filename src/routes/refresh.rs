@@ -1,14 +1,12 @@
-use sea_orm::ColumnTrait;
-use sea_orm::QueryFilter;
+use crate::routes::login::LoginResponse;
 use crate::utils::jwt::{generate_access_token, generate_refresh_token, Claims};
 use crate::utils::response::{CommonResponse, ResponseStatus};
 use crate::{try_or_http_err, AppState};
 use actix_web::{web, HttpResponse, Responder};
+use entity::users;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use sea_orm::EntityTrait;
 use serde::{Deserialize, Serialize};
-use entity::users;
-use crate::routes::login::LoginResponse;
 
 pub async fn refresh(
     state: web::Data<AppState>,
@@ -45,8 +43,7 @@ pub async fn refresh(
         );
     }
 
-    let user = try_or_http_err!(users::Entity::find()
-        .filter(users::Column::Email.eq(claims.email))
+    let user = try_or_http_err!(users::Entity::find_by_id(claims.sub)
         .one(state.db.as_ref())
         .await);
 

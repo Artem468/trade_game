@@ -10,9 +10,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,         // идентификатор пользователя
-    pub iat: usize,          // время выпуска
-    pub exp: usize,          // время истечения
+    pub sub: i32,         
+    pub iat: usize,       
+    pub exp: usize,       
     pub email: String,
     pub token_type: String,  // "access" или "refresh"
 }
@@ -22,7 +22,7 @@ pub fn generate_access_token(user_id: i32, email: &str, secret: &str) -> Result<
     let now = Utc::now();
     let exp = now + Duration::hours(1);
     let claims = Claims {
-        sub: user_id.to_string(),
+        sub: user_id,
         iat: now.timestamp() as usize,
         exp: exp.timestamp() as usize,
         email: email.to_owned(),
@@ -36,7 +36,7 @@ pub fn generate_refresh_token(user_id: i32, email: &str, secret: &str) -> Result
     let now = Utc::now();
     let exp = now + Duration::days(30);
     let claims = Claims {
-        sub: user_id.to_string(),
+        sub: user_id,
         iat: now.timestamp() as usize,
         exp: exp.timestamp() as usize,
         email: email.to_owned(),

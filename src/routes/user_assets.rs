@@ -12,7 +12,7 @@ pub async fn user_assets(
     state: web::Data<AppState>,
     token: AccessToken,
 ) -> impl Responder {
-    let user_data = try_or_http_err!(users::Entity::find().filter(users::Column::Email.eq(token.0.claims.email)).one(state.db.as_ref()).await);
+    let user_data = try_or_http_err!(users::Entity::find_by_id(token.0.claims.sub).one(state.db.as_ref()).await);
     if let Some(user) = user_data {
         let data = try_or_http_err!(
             assets::Entity::find()

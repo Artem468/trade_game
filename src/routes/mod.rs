@@ -6,3 +6,4 @@ pub mod market;
 pub mod user_assets;
 pub mod trades_history;
 pub mod private_chat;
+pub mod chat_history;

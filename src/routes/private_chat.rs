@@ -1,8 +1,7 @@
 use actix::{Actor, AsyncContext, Handler, Message as ActixMessage, StreamHandler};
 use actix_web::{error, web, Error, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
-use sea_orm::ColumnTrait;
-use sea_orm::{EntityTrait, QueryFilter, Set};
+use sea_orm::{EntityTrait, Set};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -19,12 +18,15 @@ impl AppState {
             text: Set(text.clone()),
             ..Default::default()
         };
-        let _ = MessageEntity::insert(message).exec(self.db.as_ref()).await;
+        let message_id = match MessageEntity::insert(message).exec(self.db.as_ref()).await {
+            Ok(msg) => {msg.last_insert_id}
+            Err(_) => { return }
+        };
 
         if let Some(addr) = CHAT_SESSIONS.read().await.get(&recipient_id) {
-            let _ = addr.do_send(ClientMessage {
+            let _ = addr.do_send(OutgoingClientMessage {
                 from_id,
-                recipient_id,
+                message_id,
                 text,
             });
         }
@@ -37,10 +39,7 @@ impl AppState {
         state: web::Data<AppState>,
         token: AccessToken,
     ) -> Result<HttpResponse, Error> {
-        match users::Entity::find()
-            .filter(users::Column::Email.eq(token.0.claims.email))
-            .one(state.db.as_ref())
-            .await
+        match users::Entity::find_by_id(token.0.claims.sub).one(state.db.as_ref()).await
         {
             Ok(data) => match data {
                 Some(user) => {
@@ -65,9 +64,16 @@ impl AppState {
 
 #[derive(ActixMessage, Serialize, Deserialize, Debug)]
 #[rtype(result = "()")]
-struct ClientMessage {
-    from_id: i32,
+struct IncomingClientMessage {
     recipient_id: i32,
+    text: String,
+}
+
+#[derive(ActixMessage, Serialize, Deserialize, Debug)]
+#[rtype(result = "()")]
+struct OutgoingClientMessage {
+    from_id: i32,
+    message_id: i32,
     text: String,
 }
 
@@ -97,9 +103,9 @@ impl Actor for ChatSession {
         actix::Running::Stop
     }
 }
-impl Handler<ClientMessage> for ChatSession {
+impl Handler<OutgoingClientMessage> for ChatSession {
     type Result = ();
-    fn handle(&mut self, msg: ClientMessage, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: OutgoingClientMessage, ctx: &mut Self::Context) {
         let message_json = serde_json::to_string(&msg).unwrap_or_default();
         ctx.text(message_json);
     }
@@ -108,7 +114,7 @@ impl Handler<ClientMessage> for ChatSession {
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChatSession {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, _ctx: &mut Self::Context) {
         if let Ok(ws::Message::Text(text)) = msg {
-            if let Ok(client_msg) = serde_json::from_str::<ClientMessage>(&text) {
+            if let Ok(client_msg) = serde_json::from_str::<IncomingClientMessage>(&text) {
                 let state = Arc::clone(&self.state);
                 let from_id = self.id;
                 tokio::spawn(async move {
