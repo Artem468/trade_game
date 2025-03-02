@@ -4,17 +4,27 @@ mod macros;
 mod traits;
 
 use crate::routes::prelude::*;
+use crate::routes::private_chat::ChatSession;
 use crate::routes::{market, trades_history};
 use crate::utils::establish_connection::establish_connection;
 use crate::utils::init_assets::initialize_assets;
 use crate::utils::price_calculation::calculate_asset_prices;
 use crate::utils::seed_assets::seed_assets;
+use actix::Addr;
 use actix_web::{web, App, HttpServer};
 use dotenv::dotenv;
 use redis::Client;
 use sea_orm::DbConn;
+use std::collections::HashMap;
 use std::sync::Arc;
+use lazy_static::lazy_static;
+use tokio::sync::RwLock;
 use tokio::task;
+
+lazy_static!{
+    static ref CHAT_SESSIONS: RwLock<HashMap<i32, Addr<ChatSession>>> = RwLock::new(HashMap::new());
+}
+
 
 struct AppState {
     db: Arc<DbConn>,
@@ -40,6 +50,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         cache,
         jwt_secret,
     });
+
     
     let host: String = std::env::var("HOST").unwrap_or("127.0.0.1".to_string());
     let port: String = std::env::var("port").unwrap_or("8080".to_string());
@@ -53,6 +64,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .route("/api/v1/user/assets", web::get().to(user_assets::user_assets))
             .route("/api/v1/trades/history", web::get().to(trades_history::trades_history))
             .route("/api/v1/market/data", web::get().to(market::market))
+            .route("/api/v1/privateChat/{id}", web::get().to(AppState::chat_ws))
+            // .route("/api/v1/getChatHistory/{id}", web::get().to(AppState::chat_ws))
     })
         .bind(format!("{host}:{port}"))?
         .run()
