@@ -5,7 +5,7 @@ use actix_web::{web, HttpResponse, Responder};
 use argon2::password_hash::PasswordHash;
 use argon2::{Argon2, PasswordVerifier};
 use entity::users;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
 pub async fn login(
@@ -15,7 +15,11 @@ pub async fn login(
     let input = input.into_inner();
 
     let user = try_or_http_err!(users::Entity::find()
-        .filter(users::Column::Email.eq(input.email))
+        .filter(
+            Condition::any()
+            .add(users::Column::Email.eq(&input.username))
+            .add(users::Column::Username.eq(&input.username))
+        )
         .one(state.db.as_ref())
         .await);
 
@@ -48,7 +52,7 @@ pub async fn login(
 
 #[derive(Debug, Deserialize)]
 pub struct LoginInput {
-    email: String,
+    username: String,
     password: String,
 }
 

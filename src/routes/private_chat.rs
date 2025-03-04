@@ -4,7 +4,7 @@ use actix_web_actors::ws;
 use sea_orm::{EntityTrait, Set};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-
+use chrono::{DateTime, Utc};
 use crate::utils::jwt::AccessToken;
 use crate::{AppState, CHAT_SESSIONS};
 use entity::messages::Entity as MessageEntity;
@@ -12,10 +12,12 @@ use entity::{messages, users};
 
 impl AppState {
     async fn send_message(&self, from_id: i32, recipient_id: i32, text: String) {
+        let created_at = Utc::now();
         let message = messages::ActiveModel {
             from_id: Set(from_id),
             recipient_id: Set(recipient_id),
             text: Set(text.clone()),
+            created_at: Set(Utc::now().naive_utc()),
             ..Default::default()
         };
         let message_id = match MessageEntity::insert(message).exec(self.db.as_ref()).await {
@@ -28,6 +30,7 @@ impl AppState {
                 from_id,
                 message_id,
                 text,
+                created_at
             });
         }
     }
@@ -75,6 +78,7 @@ struct OutgoingClientMessage {
     from_id: i32,
     message_id: i32,
     text: String,
+    created_at: DateTime<Utc>
 }
 
 pub(crate) struct ChatSession {

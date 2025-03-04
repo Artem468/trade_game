@@ -5,7 +5,6 @@ mod traits;
 
 use crate::routes::prelude::*;
 use crate::routes::private_chat::ChatSession;
-use crate::routes::{chat_history, market, trades_history};
 use crate::utils::establish_connection::establish_connection;
 use crate::utils::init_assets::initialize_assets;
 use crate::utils::price_calculation::calculate_asset_prices;

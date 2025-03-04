@@ -4,7 +4,7 @@ use crate::{try_or_http_err, AppState};
 use actix_web::{web, HttpResponse, Responder};
 use entity::{assets, user_balances, users};
 use sea_orm::{ColumnTrait, Condition, EntityTrait, FromQueryResult, QuerySelect};
-use sea_orm::prelude::Decimal;
+use sea_orm::prelude::{Decimal, Expr};
 use sea_orm::QueryFilter;
 use serde::Serialize;
 
@@ -17,7 +17,10 @@ pub async fn user_assets(
         let data = try_or_http_err!(
             assets::Entity::find()
             .left_join(user_balances::Entity)
-            .column_as(user_balances::Column::Amount, "amount")
+            .column_as(
+                Expr::col((user_balances::Entity, user_balances::Column::Amount)).if_null(0), 
+                "amount"
+            )
             .filter(
                 Condition::any()
                     .add(user_balances::Column::UserId.eq(user.id))
