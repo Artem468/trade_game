@@ -4,4 +4,6 @@ pub use super::refresh;
 pub use super::user_assets;
 pub use super::trades_history;
 pub use super::chat_history;
+pub use super::private_chat;
 pub use super::market;
+pub use super::user_orders;

@@ -19,6 +19,8 @@ use std::sync::Arc;
 use lazy_static::lazy_static;
 use tokio::sync::RwLock;
 use tokio::task;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 lazy_static!{
     static ref CHAT_SESSIONS: RwLock<HashMap<i32, Addr<ChatSession>>> = RwLock::new(HashMap::new());
@@ -50,21 +52,54 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         jwt_secret,
     });
 
+    #[derive(OpenApi)]
+    #[openapi(
+        info(title="Trade game", description = "Trade game api"),
+        paths(
+            register::register,
+            login::login,
+            refresh::refresh,
+            user_assets::user_assets,
+            trades_history::trades_history,
+            market::market,
+            private_chat::chat_ws,
+            chat_history::chat_history,
+            user_orders::user_orders,
+            user_orders::user_orders_by_user,
+        )
+    )]
+    struct ApiDoc;
     
     let host: String = std::env::var("HOST").unwrap_or("127.0.0.1".to_string());
     let port: String = std::env::var("port").unwrap_or("8080".to_string());
     
     HttpServer::new(move || {
-        App::new()
+        let app = App::new()
             .app_data(app_state.clone())
-            .route("/api/v1/auth/register", web::post().to(register::register))
-            .route("/api/v1/auth/login", web::post().to(login::login))
-            .route("/api/v1/auth/refresh", web::post().to(refresh::refresh))
-            .route("/api/v1/user/assets", web::get().to(user_assets::user_assets))
-            .route("/api/v1/trades/history", web::get().to(trades_history::trades_history))
-            .route("/api/v1/market/data", web::get().to(market::market))
-            .route("/api/v1/chat/private/{id}", web::get().to(AppState::chat_ws))
-            .route("/api/v1/chat/getHistory/{id}", web::get().to(chat_history::chat_history))
+            .service(register::register)
+            .service(login::login)
+            .service(refresh::refresh)
+            .service(user_assets::user_assets)
+            .service(trades_history::trades_history)
+            .service(market::market)
+            .service(private_chat::chat_ws)
+            .service(chat_history::chat_history)
+            .service(user_orders::user_orders)
+            .service(user_orders::user_orders_by_user);
+            // .route("/api/v1/orders/buy", web::post().to(buy_order))
+            // .route("/api/v1/orders/sell", web::post().to(sell_order))
+            // .route("/api/v1/market/sell", web::post().to(sell_order))
+            // .route("/api/v1/market/sell", web::post().to(sell_order))
+
+        if cfg!(feature = "docs") {
+            app.service(
+                SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", ApiDoc::openapi()),
+            )
+        }
+        else {
+            app
+        }
+        
     })
         .bind(format!("{host}:{port}"))?
         .run()

@@ -1,10 +1,11 @@
 use actix::{Actor, AsyncContext, Handler, Message as ActixMessage, StreamHandler};
-use actix_web::{error, web, Error, HttpRequest, HttpResponse};
+use actix_web::{error, get, web, Error, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
 use sea_orm::{EntityTrait, Set};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use chrono::{DateTime, Utc};
+use utoipa::{IntoParams, ToSchema};
 use crate::utils::jwt::AccessToken;
 use crate::{AppState, CHAT_SESSIONS};
 use entity::messages::Entity as MessageEntity;
@@ -34,36 +35,43 @@ impl AppState {
             });
         }
     }
+}
 
-    pub async fn chat_ws(
-        req: HttpRequest,
-        stream: web::Payload,
-        path: web::Path<i32>,
-        state: web::Data<AppState>,
-        token: AccessToken,
-    ) -> Result<HttpResponse, Error> {
-        match users::Entity::find_by_id(token.0.claims.sub).one(state.db.as_ref()).await
-        {
-            Ok(data) => match data {
-                Some(user) => {
-                    let id = path.into_inner();
-                    if user.id == id {
-                        let session = ChatSession {
-                            id,
-                            state: state.into_inner(),
-                        };
-                        ws::start(session, &req, stream)
-                    }
-                    else {
-                        Err(error::ErrorBadRequest("Different user ID"))
-                    }
+#[utoipa::path(params(ChatQuery))]
+#[get("/chat/ws/{user_id}")]
+pub async fn chat_ws(
+    req: HttpRequest,
+    stream: web::Payload,
+    path: web::Path<ChatQuery>,
+    state: web::Data<AppState>,
+    token: AccessToken,
+) -> Result<HttpResponse, Error> {
+    match users::Entity::find_by_id(token.0.claims.sub).one(state.db.as_ref()).await
+    {
+        Ok(data) => match data {
+            Some(user) => {
+                if user.id == path.user_id {
+                    let session = ChatSession {
+                        id: path.user_id,
+                        state: state.into_inner(),
+                    };
+                    ws::start(session, &req, stream)
                 }
-                None => { Err(error::ErrorUnauthorized("No user")) }
-            },
-            Err(err) => Err(error::ErrorInternalServerError(err)),
-        }
+                else {
+                    Err(error::ErrorBadRequest("Different user ID"))
+                }
+            }
+            None => { Err(error::ErrorUnauthorized("No user")) }
+        },
+        Err(err) => Err(error::ErrorInternalServerError(err)),
     }
 }
+
+#[derive(Deserialize, ToSchema, IntoParams)]
+pub struct ChatQuery {
+    pub user_id: i32,
+}
+
 
 #[derive(ActixMessage, Serialize, Deserialize, Debug)]
 #[rtype(result = "()")]

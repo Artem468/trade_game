@@ -1,15 +1,19 @@
 use crate::utils::jwt::{generate_access_token, generate_refresh_token};
 use crate::utils::response::{CommonResponse, ResponseStatus};
 use crate::{try_or_http_err, AppState};
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{post, web, HttpResponse, Responder};
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHasher};
 use entity::users;
 use rand_core::OsRng;
 use sea_orm::{ActiveModelTrait, Set};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-
+#[utoipa::path(
+    request_body = RegisterInput
+)]
+#[post("/api/v1/auth/register")]
 pub async fn register(
     state: web::Data<AppState>,
     input: web::Json<RegisterInput>,
@@ -55,7 +59,7 @@ pub async fn register(
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct RegisterInput {
     email: String,
     username: String,

@@ -30,4 +30,10 @@ tracing = "0.1.41"
 entity = { path = "entity" }
 migration = { path = "migration" }
 
+utoipa = { version = "5.3.1", features = ["actix_extras"] }
+utoipa-swagger-ui = { version = "9.0.0", features = ["actix-web"] }
+
+
+[features]
+docs = []
 

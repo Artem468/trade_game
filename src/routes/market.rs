@@ -1,7 +1,7 @@
 use crate::utils::response::{CommonResponse, ResponseStatus};
 use crate::AppState;
 use actix::prelude::*;
-use actix_web::{web, Error as ActixError, HttpRequest, HttpResponse};
+use actix_web::{get, web, Error as ActixError, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
 use chrono::Utc;
 use entity::assets;
@@ -73,6 +73,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MarketWs {
     }
 }
 
+#[utoipa::path()]
+#[get("/api/v1/market/data")]
 pub(crate) async fn market(
     req: HttpRequest,
     stream: web::Payload,
