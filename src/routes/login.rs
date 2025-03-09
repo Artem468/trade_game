@@ -37,11 +37,13 @@ pub async fn login(state: web::Data<AppState>, input: web::Json<LoginInput>) -> 
         {
             let access_token = try_or_http_err!(generate_access_token(
                 user.id,
+                user.username.as_str(),
                 user.email.as_str(),
                 state.jwt_secret.as_str()
             ));
             let refresh_token = try_or_http_err!(generate_refresh_token(
                 user.id,
+                user.username.as_str(),
                 user.email.as_str(),
                 state.jwt_secret.as_str()
             ));
@@ -51,6 +53,7 @@ pub async fn login(state: web::Data<AppState>, input: web::Json<LoginInput>) -> 
                 data: Some(LoginResponse {
                     access_token,
                     refresh_token,
+                    user_id: user.id,
                     email: user.email,
                     username: user.username,
                 }),
@@ -75,6 +78,7 @@ pub struct LoginInput {
 pub struct LoginResponse {
     access_token: String,
     refresh_token: String,
+    user_id: i32,
     email: String,
     username: String,
 }

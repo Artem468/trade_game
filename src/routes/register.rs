@@ -35,8 +35,8 @@ pub async fn register(
     
     match new_user.insert(state.db.as_ref()).await {
         Ok(data) => {
-            let access_token = try_or_http_err!(generate_access_token(data.id, data.email.as_str(), state.jwt_secret.as_str()));
-            let refresh_token = try_or_http_err!(generate_refresh_token(data.id, data.email.as_str(), state.jwt_secret.as_str()));
+            let access_token = try_or_http_err!(generate_access_token(data.id, data.username.as_str(), data.email.as_str(), state.jwt_secret.as_str()));
+            let refresh_token = try_or_http_err!(generate_refresh_token(data.id, data.username.as_str(), data.email.as_str(), state.jwt_secret.as_str()));
 
             HttpResponse::Created().json(
                 CommonResponse::<Option<RegisterResponse>> {
@@ -44,6 +44,7 @@ pub async fn register(
                     data: Some(RegisterResponse {
                         access_token,
                         refresh_token,
+                        user_id: data.id,
                         email: data.email,
                         username: data.username,
                     }),
@@ -70,6 +71,7 @@ pub struct RegisterInput {
 pub struct RegisterResponse {
     access_token: String,
     refresh_token: String,
+    user_id: i32,
     email: String,
     username: String,
 }
