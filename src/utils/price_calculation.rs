@@ -5,7 +5,7 @@ use entity::{assets, orders, price_snapshot, user_balances};
 use lazy_static::lazy_static;
 use redis::AsyncCommands;
 use sea_orm::prelude::Decimal;
-use sea_orm::{ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter, QueryOrder};
 use std::error::Error;
 use std::str::FromStr;
 use tokio::time::{interval, Duration};
@@ -61,6 +61,7 @@ async fn calculate_asset_price(
     if old_price.price.is_none() {
         if let Some(snapshot) = price_snapshot::Entity::find()
             .filter(price_snapshot::Column::AssetId.eq(asset_id))
+            .order_by_desc(price_snapshot::Column::CreatedAt)
             .one(db)
             .await?
         {

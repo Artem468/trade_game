@@ -110,7 +110,7 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(ColumnDef::new(PriceSnapshot::Id).integer().not_null().auto_increment().primary_key())
                     .col(ColumnDef::new(PriceSnapshot::AssetId).integer().not_null())
-                    .col(ColumnDef::new(PriceSnapshot::Price).integer().not_null())
+                    .col(ColumnDef::new(PriceSnapshot::Price).decimal().not_null())
                     .col(ColumnDef::new(PriceSnapshot::CreatedAt).timestamp().not_null().default(Expr::current_timestamp()))
                     .foreign_key(ForeignKey::create().from(PriceSnapshot::Table, PriceSnapshot::AssetId).to(Assets::Table, Assets::Id).on_delete(ForeignKeyAction::Cascade))
                     .to_owned(),

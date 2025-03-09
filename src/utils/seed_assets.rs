@@ -1,6 +1,7 @@
 use entity::price_snapshot;
 use sea_orm::{DbConn, EntityTrait};
 use sea_orm::{PaginatorTrait, Set};
+use sea_orm::prelude::Decimal;
 
 pub async fn seed_assets(db: &DbConn) -> Result<(), sea_orm::DbErr> {
     let count = price_snapshot::Entity::find().count(db).await?;
@@ -12,62 +13,62 @@ pub async fn seed_assets(db: &DbConn) -> Result<(), sea_orm::DbErr> {
     let assets_data = vec![
         price_snapshot::ActiveModel{
             asset_id: Set(1),
-            price: Set(246),
+            price: Set(Decimal::from(246)),
             .. Default::default()
         },
         price_snapshot::ActiveModel{
             asset_id: Set(2),
-            price: Set(96_530),
+            price: Set(Decimal::from(96_530)),
             .. Default::default()
         },
         price_snapshot::ActiveModel{
             asset_id: Set(3),
-            price: Set(338),
+            price: Set(Decimal::from(338)),
             .. Default::default()
         },
         price_snapshot::ActiveModel{
             asset_id: Set(4),
-            price: Set(684),
+            price: Set(Decimal::from(684)),
             .. Default::default()
         },
         price_snapshot::ActiveModel{
             asset_id: Set(5),
-            price: Set(134),
+            price: Set(Decimal::from(134)),
             .. Default::default()
         },
         price_snapshot::ActiveModel{
             asset_id: Set(6),
-            price: Set(408),
+            price: Set(Decimal::from(408)),
             .. Default::default()
         },
         price_snapshot::ActiveModel{
             asset_id: Set(7),
-            price: Set(2737),
+            price: Set(Decimal::from(2737)),
             .. Default::default()
         },
         price_snapshot::ActiveModel{
             asset_id: Set(8),
-            price: Set(217),
+            price: Set(Decimal::from(217)),
             .. Default::default()
         },
         price_snapshot::ActiveModel{
             asset_id: Set(9),
-            price: Set(71),
+            price: Set(Decimal::from(71)),
             .. Default::default()
         },
         price_snapshot::ActiveModel{
             asset_id: Set(10),
-            price: Set(174),
+            price: Set(Decimal::from(174)),
             .. Default::default()
         },
         price_snapshot::ActiveModel{
             asset_id: Set(11),
-            price: Set(182),
+            price: Set(Decimal::from(182)),
             .. Default::default()
         },
         price_snapshot::ActiveModel{
             asset_id: Set(12),
-            price: Set(53),
+            price: Set(Decimal::from(53)),
             .. Default::default()
         },
     ];

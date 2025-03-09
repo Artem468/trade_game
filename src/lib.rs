@@ -21,6 +21,7 @@ use tokio::sync::RwLock;
 use tokio::task;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
+use crate::utils::prices_snapshot::save_prices_to_db;
 
 lazy_static!{
     static ref CHAT_SESSIONS: RwLock<HashMap<i32, Addr<ChatSession>>> = RwLock::new(HashMap::new());
@@ -45,6 +46,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     seed_assets(db.as_ref()).await?;
 
     task::spawn(calculate_asset_prices(db.as_ref().clone(), cache.as_ref().clone(), 10));
+    task::spawn(save_prices_to_db(db.as_ref().clone(), cache.as_ref().clone(), 10_800));
     
     let app_state = web::Data::new(AppState {
         db,
@@ -87,9 +89,9 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .service(user_orders::user_orders)
             .service(user_orders::user_orders_by_user);
             // .route("/api/v1/orders/buy", web::post().to(buy_order))
-            // .route("/api/v1/orders/sell", web::post().to(sell_order))
-            // .route("/api/v1/market/sell", web::post().to(sell_order))
-            // .route("/api/v1/market/sell", web::post().to(sell_order))
+            // .route("/api/v1/orders/sell", web::post().to(sell_order_))
+            // .route("/api/v1/market/buy", web::post().to(buy_market))
+            // .route("/api/v1/market/sell", web::post().to(sell_market))
 
         if cfg!(feature = "docs") {
             app.service(
