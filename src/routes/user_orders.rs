@@ -8,7 +8,10 @@ use sea_orm::{ColumnTrait, Condition, EntityTrait, FromQueryResult, QueryFilter,
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-#[utoipa::path(params(OrderQuery, OrdersPath))]
+#[utoipa::path(
+    params(OrderQuery, OrdersPath),
+    tag="User"
+)]
 #[get("/api/v1/orders/{asset_id}")]
 pub async fn user_orders(
     state: web::Data<AppState>,
@@ -37,7 +40,10 @@ pub async fn user_orders(
     })
 }
 
-#[utoipa::path(params(OrderQuery, OrdersPathByUser))]
+#[utoipa::path(
+    params(OrderQuery, OrdersPathByUser),
+    tag="User"
+)]
 #[get("/api/v1/orders/{asset_id}/{user_id}")]
 pub async fn user_orders_by_user(
     state: web::Data<AppState>,

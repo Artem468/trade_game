@@ -86,7 +86,13 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             market_buy::market_buy,
             market_sell::market_sell,
         ),
-        modifiers(&SecurityAddon)
+        modifiers(&SecurityAddon),
+        tags(
+            (name="Authorization", description="Auth methods"),
+            (name="User", description="User methods"),
+            (name="Market", description="Market methods"),
+
+        )
     )]
     struct ApiDoc;
 
@@ -108,7 +114,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let host: String = std::env::var("HOST").unwrap_or("127.0.0.1".to_string());
-    let port: String = std::env::var("port").unwrap_or("8080".to_string());
+    let port: String = std::env::var("PORT").unwrap_or("8080".to_string());
 
     HttpServer::new(move || {
         let app = App::new()

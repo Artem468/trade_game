@@ -8,7 +8,10 @@ use sea_orm::{FromQueryResult, JoinType, QueryFilter, QuerySelect, RelationTrait
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-#[utoipa::path(params(TradeQuery))]
+#[utoipa::path(
+    params(TradeQuery),
+    tag="User"
+)]
 #[get("/api/v1/trades/history/{user_id}")]
 pub async fn trades_history(state: web::Data<AppState>, path: web::Path<TradeQuery>) -> impl Responder {
     let user_data = try_or_http_err!(

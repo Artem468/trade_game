@@ -73,7 +73,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MarketWs {
     }
 }
 
-#[utoipa::path()]
+#[utoipa::path(tag="Market")]
 #[get("/api/v1/market/data")]
 pub(crate) async fn market(
     req: HttpRequest,

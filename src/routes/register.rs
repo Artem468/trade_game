@@ -11,7 +11,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[utoipa::path(
-    request_body = RegisterInput
+    request_body = RegisterInput,
+    tag="Authorization"
 )]
 #[post("/api/v1/auth/register")]
 pub async fn register(

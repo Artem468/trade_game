@@ -14,6 +14,7 @@ use utoipa::ToSchema;
 
 #[utoipa::path(
     request_body = SellMarketRequest,
+    tag="User",
     security(
         ("bearer_token" = [])
     )

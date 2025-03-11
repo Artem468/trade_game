@@ -14,6 +14,7 @@ use crate::utils::take_commission::take_commission;
 
 #[utoipa::path(
     request_body = BuyMarketRequest,
+    tag="User",
     security(
         ("bearer_token" = [])
     )

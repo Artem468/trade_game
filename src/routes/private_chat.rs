@@ -1,15 +1,15 @@
+use crate::utils::jwt::AccessToken;
+use crate::{AppState, CHAT_SESSIONS};
 use actix::{Actor, AsyncContext, Handler, Message as ActixMessage, StreamHandler};
 use actix_web::{error, get, web, Error, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
+use chrono::{DateTime, Utc};
+use entity::messages::Entity as MessageEntity;
+use entity::{messages, users};
 use sea_orm::{EntityTrait, Set};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use chrono::{DateTime, Utc};
-use utoipa::{IntoParams, ToSchema};
-use crate::utils::jwt::AccessToken;
-use crate::{AppState, CHAT_SESSIONS};
-use entity::messages::Entity as MessageEntity;
-use entity::{messages, users};
+use utoipa::ToSchema;
 
 impl AppState {
     async fn send_message(&self, from_id: i32, recipient_id: i32, text: String) {
@@ -38,16 +38,16 @@ impl AppState {
 }
 
 #[utoipa::path(
-    params(ChatQuery),
+    request_body=IncomingClientMessage,
+    tag="User",
     security(
         ("bearer_token" = [])
     )
 )]
-#[get("/chat/ws/{user_id}")]
+#[get("/api/v1/chat/private")]
 pub async fn chat_ws(
     req: HttpRequest,
     stream: web::Payload,
-    path: web::Path<ChatQuery>,
     state: web::Data<AppState>,
     token: AccessToken,
 ) -> Result<HttpResponse, Error> {
@@ -55,16 +55,11 @@ pub async fn chat_ws(
     {
         Ok(data) => match data {
             Some(user) => {
-                if user.id == path.user_id {
-                    let session = ChatSession {
-                        id: path.user_id,
-                        state: state.into_inner(),
-                    };
-                    ws::start(session, &req, stream)
-                }
-                else {
-                    Err(error::ErrorBadRequest("Different user ID"))
-                }
+                let session = ChatSession {
+                    id: user.id,
+                    state: state.into_inner(),
+                };
+                ws::start(session, &req, stream)
             }
             None => { Err(error::ErrorUnauthorized("No user")) }
         },
@@ -72,13 +67,8 @@ pub async fn chat_ws(
     }
 }
 
-#[derive(Deserialize, ToSchema, IntoParams)]
-pub struct ChatQuery {
-    pub user_id: i32,
-}
 
-
-#[derive(ActixMessage, Serialize, Deserialize, Debug)]
+#[derive(ActixMessage, Serialize, Deserialize, Debug, ToSchema)]
 #[rtype(result = "()")]
 struct IncomingClientMessage {
     recipient_id: i32,

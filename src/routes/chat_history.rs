@@ -11,6 +11,7 @@ use utoipa::{IntoParams, ToSchema};
 
 #[utoipa::path(
     params(HistoryQuery, HistoryParams),
+    tag="User",
     security(
         ("bearer_token" = [])
     )

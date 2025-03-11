@@ -9,8 +9,10 @@ use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-
-#[utoipa::path(request_body = LoginInput)]
+#[utoipa::path(
+    request_body = LoginInput,
+    tag="Authorization"
+)]
 #[post("/api/v1/auth/login")]
 pub async fn login(state: web::Data<AppState>, input: web::Json<LoginInput>) -> impl Responder {
     let input = input.into_inner();

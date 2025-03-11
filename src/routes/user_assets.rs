@@ -8,7 +8,10 @@ use sea_orm::{ColumnTrait, Condition, EntityTrait, FromQueryResult, QuerySelect}
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-#[utoipa::path(params(AssetQuery))]
+#[utoipa::path(
+    params(AssetQuery),
+    tag="User"
+)]
 #[get("/api/v1/user/assets/{user_id}")]
 pub async fn user_assets(state: web::Data<AppState>, path: web::Path<AssetQuery>) -> impl Responder {
     let user_data = try_or_http_err!(
