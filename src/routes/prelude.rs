@@ -9,3 +9,4 @@ pub use super::market;
 pub use super::user_orders;
 pub use super::market_buy;
 pub use super::market_sell;
+pub use super::top_users;

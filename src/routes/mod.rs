@@ -10,3 +10,4 @@ pub mod chat_history;
 pub mod user_orders;
 pub mod market_buy;
 pub mod market_sell;
+pub mod top_users;

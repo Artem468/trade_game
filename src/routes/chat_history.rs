@@ -16,7 +16,7 @@ use utoipa::{IntoParams, ToSchema};
         ("bearer_token" = [])
     )
 )]
-#[get("/api/v1/chat/getHistory/{user_id}")]
+#[get("/api/v1/chat/history/{user_id}")]
 pub async fn chat_history(
     state: web::Data<AppState>,
     token: AccessToken,

@@ -13,6 +13,8 @@ use utoipa::ToSchema;
 
 impl AppState {
     async fn send_message(&self, from_id: i32, recipient_id: i32, text: String) {
+        if from_id == recipient_id { return }
+        
         let created_at = Utc::now();
         let message = messages::ActiveModel {
             from_id: Set(from_id),

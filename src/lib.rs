@@ -85,6 +85,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             user_orders::user_orders_by_user,
             market_buy::market_buy,
             market_sell::market_sell,
+            top_users::top_users,
         ),
         modifiers(&SecurityAddon),
         tags(
@@ -130,7 +131,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .service(user_orders::user_orders)
             .service(user_orders::user_orders_by_user)
             .service(market_buy::market_buy)
-            .service(market_sell::market_sell);
+            .service(market_sell::market_sell)
+            .service(top_users::top_users);
         // .route("/api/v1/orders/buy", web::post().to(buy_order))
         // .route("/api/v1/orders/sell", web::post().to(sell_order_))
         
