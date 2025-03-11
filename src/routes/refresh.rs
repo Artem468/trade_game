@@ -9,9 +9,7 @@ use sea_orm::EntityTrait;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[utoipa::path(
-    request_body = RefreshInput,
-)]
+#[utoipa::path(request_body = RefreshInput)]
 #[post("/api/v1/auth/refresh")]
 pub async fn refresh(state: web::Data<AppState>, input: web::Json<RefreshInput>) -> impl Responder {
     let validation = Validation::new(Algorithm::HS256);

@@ -16,6 +16,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Users::Email).string().not_null().unique_key())
                     .col(ColumnDef::new(Users::HashedPassword).string().not_null())
                     .col(ColumnDef::new(Users::Balance).decimal().not_null().default(10000))
+                    .col(ColumnDef::new(Users::IsBot).boolean().not_null().default(false))
                     .col(ColumnDef::new(Users::CreatedAt).timestamp().not_null().default(Expr::current_timestamp()))
                     .to_owned(),
             )
@@ -141,6 +142,7 @@ enum Users {
     Email,
     HashedPassword,
     Balance,
+    IsBot,
     CreatedAt,
 }
 

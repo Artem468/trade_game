@@ -7,3 +7,5 @@ pub use super::chat_history;
 pub use super::private_chat;
 pub use super::market;
 pub use super::user_orders;
+pub use super::market_buy;
+pub use super::market_sell;

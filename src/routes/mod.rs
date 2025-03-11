@@ -8,3 +8,5 @@ pub mod trades_history;
 pub mod private_chat;
 pub mod chat_history;
 pub mod user_orders;
+pub mod market_buy;
+pub mod market_sell;

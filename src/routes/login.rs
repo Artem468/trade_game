@@ -10,9 +10,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 
-#[utoipa::path(
-    request_body = LoginInput,
-)]
+#[utoipa::path(request_body = LoginInput)]
 #[post("/api/v1/auth/login")]
 pub async fn login(state: web::Data<AppState>, input: web::Json<LoginInput>) -> impl Responder {
     let input = input.into_inner();
@@ -61,10 +59,10 @@ pub async fn login(state: web::Data<AppState>, input: web::Json<LoginInput>) -> 
             });
         }
     }
-    HttpResponse::Unauthorized().json(CommonResponse::<Option<LoginResponse>> {
+    HttpResponse::BadRequest().json(CommonResponse::<Option<LoginResponse>> {
         status: ResponseStatus::Error,
         data: None,
-        error: Some("Unauthorized user".into()),
+        error: Some("No user".into()),
     })
 }
 

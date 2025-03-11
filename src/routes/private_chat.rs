@@ -37,7 +37,12 @@ impl AppState {
     }
 }
 
-#[utoipa::path(params(ChatQuery))]
+#[utoipa::path(
+    params(ChatQuery),
+    security(
+        ("bearer_token" = [])
+    )
+)]
 #[get("/chat/ws/{user_id}")]
 pub async fn chat_ws(
     req: HttpRequest,

@@ -9,7 +9,12 @@ use sea_orm::{QueryFilter, QueryOrder};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-#[utoipa::path(params(HistoryQuery, HistoryParams))]
+#[utoipa::path(
+    params(HistoryQuery, HistoryParams),
+    security(
+        ("bearer_token" = [])
+    )
+)]
 #[get("/api/v1/chat/getHistory/{user_id}")]
 pub async fn chat_history(
     state: web::Data<AppState>,

@@ -13,6 +13,7 @@ pub struct Model {
     pub email: String,
     pub hashed_password: String,
     pub balance: Decimal,
+    pub is_bot: bool,
     pub created_at: DateTime,
 }
 
