@@ -18,6 +18,7 @@ use redis::Client;
 use sea_orm::DbConn;
 use std::collections::HashMap;
 use std::sync::Arc;
+use sea_orm::prelude::Decimal;
 use tokio::sync::RwLock;
 use tokio::task;
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
@@ -26,6 +27,10 @@ use utoipa_swagger_ui::SwaggerUi;
 
 lazy_static! {
     static ref CHAT_SESSIONS: RwLock<HashMap<i32, Addr<ChatSession>>> = RwLock::new(HashMap::new());
+    static ref COMMISSION_MARKET_BUY: Decimal = Decimal::from_f64_retain(0.1).unwrap();
+    static ref COMMISSION_MARKET_SELL: Decimal = Decimal::from_f64_retain(0.1).unwrap();
+    static ref COMMISSION_ORDER_BUY: Decimal = Decimal::from_f64_retain(0.1).unwrap();
+    static ref COMMISSION_ORDER_SELL: Decimal = Decimal::from_f64_retain(0.1).unwrap();
 }
 
 struct AppState {

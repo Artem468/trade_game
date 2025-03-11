@@ -1,16 +1,16 @@
+use crate::utils::get_price::get_price_by_asset_id;
 use crate::utils::jwt::AccessToken;
 use crate::utils::response::{CommonResponse, ResponseStatus};
-use crate::{try_or_http_err, AppState};
+use crate::{try_or_http_err, AppState, COMMISSION_MARKET_BUY};
 use actix_web::{post, web, HttpResponse, Responder};
-use entity::{user_balances, users};
-use redis::AsyncCommands;
+use entity::{trades, user_balances, users};
 use sea_orm::prelude::Decimal;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter, Set
 };
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 use utoipa::ToSchema;
+use crate::utils::take_commission::take_commission;
 
 #[utoipa::path(
     request_body = BuyMarketRequest,
@@ -26,23 +26,8 @@ pub async fn market_buy(
 ) -> impl Responder {
     let user_id = token.0.claims.sub;
 
-    let mut redis_conn = try_or_http_err!(state.cache.get_multiplexed_async_connection().await);
-
-    let price_key = format!("asset_price:{}", input.asset_id);
-    let price_str: Option<String> = try_or_http_err!(redis_conn.hget(&price_key, "price").await);
-
-    let current_price = if let Some(price_str) = price_str {
-        try_or_http_err!(Decimal::from_str(&price_str))
-    } else {
-        return HttpResponse::BadRequest().json(CommonResponse::<()> {
-            status: ResponseStatus::Error,
-            data: (),
-            error: Some("Can't get price".into()),
-        });
-    };
-
+    let current_price = try_or_http_err!(get_price_by_asset_id(&state.cache, input.asset_id).await);
     let amount_to_buy = Decimal::from_f64_retain(input.amount).unwrap_or_default();
-
     let total_cost = current_price * amount_to_buy;
 
     let user_asset: user_balances::Model = if let Some(_data) = try_or_http_err!(
@@ -92,23 +77,36 @@ pub async fn market_buy(
     try_or_http_err!(active_user.update(state.db.as_ref()).await);
 
     let mut active_user_asset = user_asset.into_active_model();
-    active_user_asset.amount = Set((_user_amount + amount_to_buy).round_dp(3));
+    let amount_data = take_commission(amount_to_buy, COMMISSION_MARKET_BUY.clone());
+    active_user_asset.amount = Set((amount_data.amount + _user_amount).round_dp(3));
 
     if let Err(_) = active_user_asset.update(state.db.as_ref()).await {
         let _asset = user_balances::ActiveModel {
             user_id: Set(user_id),
             asset_id: Set(input.asset_id),
-            amount: Set(amount_to_buy.round_dp(3)),
+            amount: Set((amount_data.amount + _user_amount).round_dp(3)),
             ..Default::default()
         };
 
         try_or_http_err!(_asset.insert(state.db.as_ref()).await);
     }
-    
+
+    let trade = trades::ActiveModel {
+        user_id: Set(user_id),
+        asset_id: Set(input.asset_id),
+        trade_type: Set("buy".into()),
+        price: Set(current_price),
+        amount: Set(amount_data.amount),
+        ..Default::default()
+    };
+    try_or_http_err!(trade.insert(state.db.as_ref()).await);
 
     HttpResponse::Ok().json(CommonResponse::<BuyMarketResponse> {
         status: ResponseStatus::Ok,
-        data: BuyMarketResponse {},
+        data: BuyMarketResponse {
+            amount: amount_data.amount,
+            commission: amount_data.commission,
+        },
         error: None,
     })
 }
@@ -120,4 +118,7 @@ pub struct BuyMarketRequest {
 }
 
 #[derive(Serialize)]
-pub struct BuyMarketResponse {}
+pub struct BuyMarketResponse {
+    amount: Decimal,
+    commission: Decimal
+}
