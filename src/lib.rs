@@ -15,15 +15,16 @@ use actix_web::{web, App, HttpServer};
 use dotenv::dotenv;
 use lazy_static::lazy_static;
 use redis::Client;
+use sea_orm::prelude::Decimal;
 use sea_orm::DbConn;
 use std::collections::HashMap;
 use std::sync::Arc;
-use sea_orm::prelude::Decimal;
 use tokio::sync::RwLock;
 use tokio::task;
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::{Modify, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
+
 
 lazy_static! {
     static ref CHAT_SESSIONS: RwLock<HashMap<i32, Addr<ChatSession>>> = RwLock::new(HashMap::new());
@@ -39,8 +40,9 @@ struct AppState {
     jwt_secret: String,
 }
 
+
+
 pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    // tracing_subscriber::fmt().with_max_level(tracing::Level::TRACE).init();
     dotenv().ok();
 
     let db = Arc::new(establish_connection().await?);
@@ -118,7 +120,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let port: String = std::env::var("PORT").unwrap_or("8080".to_string());
 
     HttpServer::new(move || {
-        let app = App::new()
+        let mut app = App::new()
             .app_data(app_state.clone())
             .service(register::register)
             .service(login::login)
@@ -136,15 +138,14 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         // .route("/api/v1/orders/buy", web::post().to(buy_order))
         // .route("/api/v1/orders/sell", web::post().to(sell_order_))
         
-
         if cfg!(feature = "docs") {
-            app.service(
+            app = app.service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")
                     .url("/api-docs/openapi.json", ApiDoc::openapi()),
-            )
-        } else {
-            app
+            );
         }
+
+        app
     })
     .bind(format!("{host}:{port}"))?
     .run()
