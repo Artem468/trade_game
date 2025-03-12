@@ -9,11 +9,11 @@ use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 #[utoipa::path(
-    params(TradeQuery),
+    params(TradePath),
     tag="User"
 )]
 #[get("/api/v1/trades/history/{user_id}")]
-pub async fn trades_history(state: web::Data<AppState>, path: web::Path<TradeQuery>) -> impl Responder {
+pub async fn trades_history(state: web::Data<AppState>, path: web::Path<TradePath>) -> impl Responder {
     let user_data = try_or_http_err!(
         users::Entity::find_by_id(path.user_id)
             .one(state.db.as_ref())
@@ -68,6 +68,6 @@ struct TradeHistoryResponse {
 
 
 #[derive(Deserialize, ToSchema, IntoParams)]
-pub struct TradeQuery {
+pub struct TradePath {
     pub user_id: i32,
 }

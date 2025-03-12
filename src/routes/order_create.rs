@@ -59,11 +59,6 @@ pub async fn order_create(
                 error: None,
             })
         }
-        _ => HttpResponse::BadRequest().json(CommonResponse::<()> {
-            status: ResponseStatus::Error,
-            data: (),
-            error: Some("Unexpected order type".into()),
-        }),
     }
 }
 

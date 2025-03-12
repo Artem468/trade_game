@@ -14,3 +14,5 @@ pub use super::order_buy;
 pub use super::order_sell;
 pub use super::order_create;
 pub use super::order_cancel;
+pub use super::user_info;
+pub use super::price_history;

@@ -15,3 +15,5 @@ pub mod order_sell;
 pub mod order_buy;
 pub mod order_create;
 pub mod order_cancel;
+pub mod user_info;
+pub mod price_history;

@@ -74,7 +74,7 @@ async fn calculate_asset_price(
     }
 
     let old_price_value = old_price.price.unwrap();
-    
+
     let buy_orders: Vec<orders::Model> = Orders::find()
         .filter(orders::Column::AssetId.eq(asset_id))
         .filter(orders::Column::OrderType.eq("buy"))
@@ -88,22 +88,22 @@ async fn calculate_asset_price(
         .filter(orders::Column::Status.eq("pending"))
         .all(db)
         .await?;
-    
+
     let user_balances: Vec<user_balances::Model> = user_balances::Entity::find()
         .filter(user_balances::Column::AssetId.eq(asset_id))
         .all(db)
         .await?;
 
     let total_held_balance: Decimal = user_balances.iter().map(|b| b.amount).sum();
-    
+
     let v_buy: Decimal = buy_orders.iter().map(|o| o.amount).sum::<Decimal>();
     let v_sell: Decimal = sell_orders.iter().map(|o| o.amount).sum::<Decimal>();
-    
+
     let total_supply = v_buy + total_held_balance;
 
     let price_change = K.clone() * (v_buy - v_sell) / (total_supply + EPSILON.clone());
     let new_price = (old_price_value * (Decimal::from(1) + price_change)).round_dp(3);
-    
+
     let key = format!("asset_price:{}", asset_id);
     let history_key = format!("asset_price_history:{}", asset_id);
     let timestamp = Utc::now().timestamp();
@@ -111,14 +111,25 @@ async fn calculate_asset_price(
     let _: () = redis_conn
         .hset_multiple(
             &key,
-            &[("price", &new_price.to_string()), ("created_at", &Utc::now().to_rfc3339())],
+            &[
+                ("price", &new_price.to_string()),
+                ("created_at", &Utc::now().to_rfc3339()),
+            ],
         )
         .await?;
 
-    let _: () = redis_conn.zadd(&history_key, &new_price.to_string(), timestamp).await?;
+    let _: () = redis_conn
+        .zadd(
+            &history_key,
+            &format!("{}:{}", new_price.to_string(), timestamp),
+            timestamp,
+        )
+        .await?;
 
     let day_ago = Utc::now().timestamp() - 86400;
-    let _: () = redis_conn.zrembyscore(&history_key, "-inf", day_ago).await?;
+    let _: () = redis_conn
+        .zrembyscore(&history_key, "-inf", day_ago)
+        .await?;
 
     Ok(())
 }

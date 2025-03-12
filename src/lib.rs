@@ -93,12 +93,15 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             order_sell::order_sell,
             order_create::order_create,
             order_cancel::order_cancel,
+            user_info::user_info,
+            price_history::price_history,
         ),
         modifiers(&SecurityAddon),
         tags(
             (name="Authorization", description="Auth methods"),
             (name="User", description="User methods"),
             (name="Market", description="Market methods"),
+
         )
     )]
     struct ApiDoc;
@@ -142,7 +145,9 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .service(order_buy::order_buy)
             .service(order_sell::order_sell)
             .service(order_create::order_create)
-            .service(order_cancel::order_cancel);
+            .service(order_cancel::order_cancel)
+            .service(user_info::user_info)
+            .service(price_history::price_history);
         
         if cfg!(feature = "docs") {
             app = app.service(
