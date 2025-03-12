@@ -2,6 +2,7 @@ mod macros;
 mod routes;
 mod traits;
 mod utils;
+mod structs;
 
 use crate::routes::prelude::*;
 use crate::routes::private_chat::ChatSession;
@@ -88,13 +89,16 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             market_buy::market_buy,
             market_sell::market_sell,
             top_users::top_users,
+            order_buy::order_buy,
+            order_sell::order_sell,
+            order_create::order_create,
+            order_cancel::order_cancel,
         ),
         modifiers(&SecurityAddon),
         tags(
             (name="Authorization", description="Auth methods"),
             (name="User", description="User methods"),
             (name="Market", description="Market methods"),
-
         )
     )]
     struct ApiDoc;
@@ -134,9 +138,11 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .service(user_orders::user_orders_by_user)
             .service(market_buy::market_buy)
             .service(market_sell::market_sell)
-            .service(top_users::top_users);
-        // .route("/api/v1/orders/buy", web::post().to(buy_order))
-        // .route("/api/v1/orders/sell", web::post().to(sell_order_))
+            .service(top_users::top_users)
+            .service(order_buy::order_buy)
+            .service(order_sell::order_sell)
+            .service(order_create::order_create)
+            .service(order_cancel::order_cancel);
         
         if cfg!(feature = "docs") {
             app = app.service(

@@ -10,3 +10,7 @@ pub use super::user_orders;
 pub use super::market_buy;
 pub use super::market_sell;
 pub use super::top_users;
+pub use super::order_buy;
+pub use super::order_sell;
+pub use super::order_create;
+pub use super::order_cancel;

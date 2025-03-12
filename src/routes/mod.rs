@@ -11,3 +11,7 @@ pub mod user_orders;
 pub mod market_buy;
 pub mod market_sell;
 pub mod top_users;
+pub mod order_sell;
+pub mod order_buy;
+pub mod order_create;
+pub mod order_cancel;

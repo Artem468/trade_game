@@ -77,14 +77,14 @@ async fn calculate_asset_price(
     
     let buy_orders: Vec<orders::Model> = Orders::find()
         .filter(orders::Column::AssetId.eq(asset_id))
-        .filter(orders::Column::OrderSide.eq("buy"))
+        .filter(orders::Column::OrderType.eq("buy"))
         .filter(orders::Column::Status.eq("pending"))
         .all(db)
         .await?;
 
     let sell_orders: Vec<orders::Model> = Orders::find()
         .filter(orders::Column::AssetId.eq(asset_id))
-        .filter(orders::Column::OrderSide.eq("sell"))
+        .filter(orders::Column::OrderType.eq("sell"))
         .filter(orders::Column::Status.eq("pending"))
         .all(db)
         .await?;

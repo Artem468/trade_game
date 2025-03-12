@@ -1,17 +1,15 @@
 use crate::utils::response::{CommonResponse, ResponseStatus};
 use crate::{try_or_http_err, AppState};
 use actix_web::{get, web, HttpResponse, Responder};
-use chrono::{DateTime, Utc};
+use chrono::NaiveDateTime;
 use entity::{orders, users};
 use sea_orm::prelude::{Decimal, Expr};
 use sea_orm::{ColumnTrait, Condition, EntityTrait, FromQueryResult, QueryFilter, QuerySelect};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
+use crate::structs::order_structs::{OrderStatus, OrderType};
 
-#[utoipa::path(
-    params(OrderQuery, OrdersPath),
-    tag="User"
-)]
+#[utoipa::path(params(OrderQuery, OrdersPath), tag = "User")]
 #[get("/api/v1/orders/{asset_id}")]
 pub async fn user_orders(
     state: web::Data<AppState>,
@@ -25,7 +23,36 @@ pub async fn user_orders(
                 Expr::col((users::Entity, users::Column::Username)),
                 "username"
             )
-            .filter(orders::Column::Id.eq(path.asset_id))
+            .filter({
+                let mut cond = Condition::all().add(orders::Column::AssetId.eq(path.asset_id));
+            
+                if let Some(status) = &query.status {
+                    match status {
+                        OrderStatus::Pending => {
+                            cond = cond.add(orders::Column::Status.eq("pending"));
+                        }
+                        OrderStatus::Done => {
+                            cond = cond.add(orders::Column::Status.eq("done"));
+                        }
+                        OrderStatus::Cancel => {
+                            cond = cond.add(orders::Column::Status.eq("cancel"));
+                        }
+                    }
+                }
+
+                if let Some(order_type) = &query.order_type {
+                    match order_type {
+                        OrderType::Buy => {
+                            cond = cond.add(orders::Column::OrderType.eq("buy"));
+                        }
+                        OrderType::Sell => {
+                            cond = cond.add(orders::Column::OrderType.eq("sell"));
+                        }
+                    }
+                }
+
+                cond
+            })
             .limit(query.limit)
             .offset(query.offset)
             .into_model::<OrderResponse>()
@@ -40,10 +67,7 @@ pub async fn user_orders(
     })
 }
 
-#[utoipa::path(
-    params(OrderQuery, OrdersPathByUser),
-    tag="User"
-)]
+#[utoipa::path(params(OrderQuery, OrdersPathByUser), tag = "User")]
 #[get("/api/v1/orders/{asset_id}/{user_id}")]
 pub async fn user_orders_by_user(
     state: web::Data<AppState>,
@@ -57,11 +81,38 @@ pub async fn user_orders_by_user(
                 Expr::col((users::Entity, users::Column::Username)),
                 "username"
             )
-            .filter(
-                Condition::all()
-                    .add(orders::Column::Id.eq(path.asset_id))
-                    .add(users::Column::Id.eq(path.user_id))
-            )
+            .filter({
+                let mut cond = Condition::all()
+                    .add(orders::Column::AssetId.eq(path.asset_id))
+                    .add(users::Column::Id.eq(path.user_id));
+
+                if let Some(status) = &query.status {
+                    match status {
+                        OrderStatus::Pending => {
+                            cond = cond.add(orders::Column::Status.eq("pending"));
+                        }
+                        OrderStatus::Done => {
+                            cond = cond.add(orders::Column::Status.eq("done"));
+                        }
+                        OrderStatus::Cancel => {
+                            cond = cond.add(orders::Column::Status.eq("cancel"));
+                        }
+                    }
+                }
+
+                if let Some(order_type) = &query.order_type {
+                    match order_type {
+                        OrderType::Buy => {
+                            cond = cond.add(orders::Column::OrderType.eq("buy"));
+                        }
+                        OrderType::Sell => {
+                            cond = cond.add(orders::Column::OrderType.eq("sell"));
+                        }
+                    }
+                }
+
+                cond
+            })
             .limit(query.limit)
             .offset(query.offset)
             .into_model::<OrderResponse>()
@@ -83,12 +134,11 @@ struct OrderResponse {
     username: String,
     asset_id: i32,
     order_type: String,
-    order_side: String,
     price: Option<Decimal>,
     amount: Decimal,
     status: String,
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
+    created_at: NaiveDateTime,
+    updated_at: NaiveDateTime,
 }
 
 #[derive(Deserialize, ToSchema, IntoParams)]
@@ -105,5 +155,8 @@ pub struct OrdersPathByUser {
 #[derive(Deserialize, ToSchema, IntoParams)]
 pub struct OrderQuery {
     pub limit: u64,
-    pub offset: u64,
+    pub offset: Option<u64>,
+    pub status: Option<OrderStatus>,
+    pub order_type: Option<OrderType>,
 }
+

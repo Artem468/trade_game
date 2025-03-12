@@ -76,8 +76,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Orders::UserId).integer().not_null())
                     .col(ColumnDef::new(Orders::AssetId).integer().not_null())
                     .col(ColumnDef::new(Orders::OrderType).string().not_null())
-                    .col(ColumnDef::new(Orders::OrderSide).string().not_null())
-                    .col(ColumnDef::new(Orders::Price).decimal().null()) // NULL для рыночных ордеров
+                    .col(ColumnDef::new(Orders::Price).decimal().not_null()) // NULL для рыночных ордеров
                     .col(ColumnDef::new(Orders::Amount).decimal().not_null())
                     .col(ColumnDef::new(Orders::Status).string().not_null())
                     .col(ColumnDef::new(Orders::CreatedAt).timestamp().not_null().default(Expr::current_timestamp()))
@@ -182,7 +181,6 @@ enum Orders {
     UserId,
     AssetId,
     OrderType,
-    OrderSide,
     Price,
     Amount,
     Status,

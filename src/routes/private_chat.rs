@@ -20,7 +20,7 @@ impl AppState {
             from_id: Set(from_id),
             recipient_id: Set(recipient_id),
             text: Set(text.clone()),
-            created_at: Set(Utc::now().naive_utc()),
+            created_at: Set(created_at.naive_utc()),
             ..Default::default()
         };
         let message_id = match MessageEntity::insert(message).exec(self.db.as_ref()).await {
