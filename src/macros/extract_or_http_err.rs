@@ -1,5 +1,3 @@
-use crate::unwrap_or_http_err_with_opt_msg;
-
 #[macro_export]
 macro_rules! extract_db_response_or_http_err {
     ($expr:expr) => {

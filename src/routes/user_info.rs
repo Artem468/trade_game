@@ -6,7 +6,6 @@ use entity::users;
 use sea_orm::prelude::{DateTime, Decimal};
 use sea_orm::EntityTrait;
 use serde::Serialize;
-use utoipa::ToSchema;
 
 #[utoipa::path(
     tag = "User",
