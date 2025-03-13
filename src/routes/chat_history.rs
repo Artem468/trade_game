@@ -20,8 +20,8 @@ use utoipa::{IntoParams, ToSchema};
 pub async fn chat_history(
     state: web::Data<AppState>,
     token: AccessToken,
-    query: web::Path<HistoryQuery>,
-    params: web::Query<HistoryParams>,
+    params: web::Path<HistoryParams>,
+    query: web::Query<HistoryQuery>,
 ) -> impl Responder {
     let user_data = try_or_http_err!(
         users::Entity::find_by_id(token.0.claims.sub)
@@ -36,17 +36,19 @@ pub async fn chat_history(
                         .add(
                             Condition::all()
                                 .add(messages::Column::FromId.eq(user.id))
-                                .add(messages::Column::RecipientId.eq(query.user_id))
+                                .add(messages::Column::RecipientId.eq(params.user_id))
+                                .add(messages::Column::Id.lt(query.before_message_id))
                         )
                         .add(
                             Condition::all()
                                 .add(messages::Column::RecipientId.eq(user.id))
-                                .add(messages::Column::FromId.eq(query.user_id))
+                                .add(messages::Column::FromId.eq(params.user_id))
+                                .add(messages::Column::Id.lt(query.before_message_id))
                         ),
                 )
                 .column_as(messages::Column::Id, "message_id")
                 .order_by_desc(messages::Column::CreatedAt)
-                .limit(params.limit)
+                .limit(query.limit)
                 .into_model::<ChatMsg>()
                 .all(state.db.as_ref())
                 .await
@@ -76,11 +78,12 @@ pub struct ChatMsg {
 }
 
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]
-pub struct HistoryParams {
+pub struct HistoryQuery {
     pub limit: u64,
+    pub before_message_id: i32
 }
 
 #[derive(Deserialize, ToSchema, IntoParams)]
-pub struct HistoryQuery {
+pub struct HistoryParams {
     pub user_id: i32,
 }
