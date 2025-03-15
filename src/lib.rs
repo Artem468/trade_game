@@ -26,7 +26,6 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::{Modify, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
 
-
 lazy_static! {
     static ref CHAT_SESSIONS: RwLock<HashMap<i32, Addr<ChatSession>>> = RwLock::new(HashMap::new());
     static ref COMMISSION_MARKET_BUY: Decimal = Decimal::from_f64_retain(0.1).unwrap();
@@ -95,6 +94,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             order_cancel::order_cancel,
             user_info::user_info,
             price_history::price_history,
+            create_event::create_event,
+            get_events::get_events,
         ),
         modifiers(&SecurityAddon),
         tags(
@@ -147,7 +148,9 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .service(order_create::order_create)
             .service(order_cancel::order_cancel)
             .service(user_info::user_info)
-            .service(price_history::price_history);
+            .service(price_history::price_history)
+            .service(create_event::create_event)
+            .service(get_events::get_events);
         
         if cfg!(feature = "docs") {
             app = app.service(

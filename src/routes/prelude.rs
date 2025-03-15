@@ -16,3 +16,5 @@ pub use super::order_create;
 pub use super::order_cancel;
 pub use super::user_info;
 pub use super::price_history;
+pub use super::create_event;
+pub use super::get_events;

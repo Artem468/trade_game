@@ -117,6 +117,19 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        manager
+            .create_table(
+                Table::create()
+                    .table(Events::Table)
+                    .if_not_exists()
+                    .col(ColumnDef::new(Events::Id).integer().not_null().auto_increment().primary_key())
+                    .col(ColumnDef::new(Events::Title).text().not_null())
+                    .col(ColumnDef::new(Events::Description).text().not_null())
+                    .col(ColumnDef::new(Events::CreatedAt).timestamp().not_null().default(Expr::current_timestamp()))
+                    .to_owned(),
+            )
+            .await?;
+
         Ok(())
     }
 
@@ -128,6 +141,7 @@ impl MigrationTrait for Migration {
         manager.drop_table(Table::drop().table(Users::Table).to_owned()).await?;
         manager.drop_table(Table::drop().table(Messages::Table).to_owned()).await?;
         manager.drop_table(Table::drop().table(PriceSnapshot::Table).to_owned()).await?;
+        manager.drop_table(Table::drop().table(Events::Table).to_owned()).await?;
         Ok(())
     }
 }
@@ -205,4 +219,13 @@ enum PriceSnapshot {
     AssetId,
     Price,
     CreatedAt,
+}
+
+#[derive(DeriveIden)]
+enum Events {
+    Table,
+    Id,
+    Title,
+    Description,
+    CreatedAt
 }

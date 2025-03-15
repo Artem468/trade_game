@@ -17,3 +17,5 @@ pub mod order_create;
 pub mod order_cancel;
 pub mod user_info;
 pub mod price_history;
+pub mod create_event;
+pub mod get_events;
