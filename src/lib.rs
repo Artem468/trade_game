@@ -1,8 +1,8 @@
 mod macros;
 mod routes;
+mod structs;
 mod traits;
 mod utils;
-mod structs;
 
 use crate::routes::prelude::*;
 use crate::routes::private_chat::ChatSession;
@@ -39,8 +39,6 @@ struct AppState {
     cache: Arc<Client>,
     jwt_secret: String,
 }
-
-
 
 pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
@@ -96,6 +94,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             price_history::price_history,
             create_event::create_event,
             get_events::get_events,
+            create_bot::create_bot,
+            get_bots::get_bots,
         ),
         modifiers(&SecurityAddon),
         tags(
@@ -150,8 +150,10 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .service(user_info::user_info)
             .service(price_history::price_history)
             .service(create_event::create_event)
-            .service(get_events::get_events);
-        
+            .service(get_events::get_events)
+            .service(create_bot::create_bot)
+            .service(get_bots::get_bots);
+
         if cfg!(feature = "docs") {
             app = app.service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")

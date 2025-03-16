@@ -19,3 +19,5 @@ pub mod user_info;
 pub mod price_history;
 pub mod create_event;
 pub mod get_events;
+pub mod get_bots;
+pub mod create_bot;

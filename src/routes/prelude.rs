@@ -18,3 +18,5 @@ pub use super::user_info;
 pub use super::price_history;
 pub use super::create_event;
 pub use super::get_events;
+pub use super::create_bot;
+pub use super::get_bots;
