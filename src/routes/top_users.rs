@@ -1,3 +1,5 @@
+use sea_orm::ColumnTrait;
+use sea_orm::QueryFilter;
 use crate::traits::redis::PriceInfo;
 use crate::utils::response::{CommonResponse, ResponseStatus};
 use crate::{try_or_http_err, AppState};
@@ -15,16 +17,7 @@ pub async fn top_users(
     state: web::Data<AppState>,
     query: web::Query<TopUsersQuery>,
 ) -> impl Responder {
-    let mut redis_conn = match state.cache.get_multiplexed_async_connection().await {
-        Ok(conn) => conn,
-        Err(err) => {
-            return HttpResponse::InternalServerError().json(CommonResponse::<()> {
-                status: ResponseStatus::Error,
-                data: (),
-                error: Some(err.to_string()),
-            })
-        }
-    };
+    let mut redis_conn = try_or_http_err!(state.cache.get_multiplexed_async_connection().await);
 
     let assets_keys: Vec<String> = try_or_http_err!(redis_conn.keys("asset_price:*").await);
     let mut asset_prices: Vec<(&str, PriceInfo)> = Vec::new();
@@ -62,6 +55,7 @@ pub async fn top_users(
             Expr::cust(&query_string),
             "total_balance",
         )
+        .filter(users::Column::IsBot.eq(false))
         .order_by_desc(Expr::cust("total_balance"))
         .limit(query.limit)
         .into_model::<TopUsers>()

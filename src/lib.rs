@@ -96,6 +96,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             get_events::get_events,
             create_bot::create_bot,
             get_bots::get_bots,
+            get_user_place::get_user_place,
         ),
         modifiers(&SecurityAddon),
         tags(
@@ -152,7 +153,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .service(create_event::create_event)
             .service(get_events::get_events)
             .service(create_bot::create_bot)
-            .service(get_bots::get_bots);
+            .service(get_bots::get_bots)
+            .service(get_user_place::get_user_place);
 
         if cfg!(feature = "docs") {
             app = app.service(

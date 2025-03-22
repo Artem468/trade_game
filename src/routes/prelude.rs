@@ -20,3 +20,4 @@ pub use super::create_event;
 pub use super::get_events;
 pub use super::create_bot;
 pub use super::get_bots;
+pub use super::get_user_place;
