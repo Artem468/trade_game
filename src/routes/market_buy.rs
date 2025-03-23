@@ -74,7 +74,8 @@ pub async fn market_buy(
     let _user_amount = user_asset.amount;
     
     let mut active_user: users::ActiveModel = user.into_active_model();
-    active_user.balance = Set((_balance - total_cost).round_dp(3));
+    let new_balance = (_balance - total_cost).round_dp(3);
+    active_user.balance = Set(new_balance);
     try_or_http_err!(active_user.update(state.db.as_ref()).await);
 
     let mut active_user_asset = user_asset.into_active_model();
@@ -107,6 +108,7 @@ pub async fn market_buy(
         data: BuyMarketResponse {
             amount: amount_data.amount,
             commission: amount_data.commission,
+            balance: new_balance
         },
         error: None,
     })
@@ -121,5 +123,6 @@ pub struct BuyMarketRequest {
 #[derive(Serialize)]
 pub struct BuyMarketResponse {
     amount: Decimal,
-    commission: Decimal
+    commission: Decimal,
+    balance: Decimal
 }

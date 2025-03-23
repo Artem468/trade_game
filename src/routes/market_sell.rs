@@ -73,7 +73,8 @@ pub async fn market_sell(
 
     let mut active_user: users::ActiveModel = user.into_active_model();
     let amount_commission = take_commission(total_cost, COMMISSION_MARKET_SELL.clone());
-    active_user.balance = Set((_balance + amount_commission.amount).round_dp(3));
+    let new_balance = (_balance + amount_commission.amount).round_dp(3);
+    active_user.balance = Set(new_balance);
     try_or_http_err!(active_user.update(state.db.as_ref()).await);
 
     let mut active_user_asset = user_asset.into_active_model();
@@ -97,6 +98,7 @@ pub async fn market_sell(
         data: BuyMarketResponse {
             amount: amount_commission.amount,
             commission: amount_commission.commission,
+            balance: new_balance
         },
         error: None,
     })
@@ -111,5 +113,6 @@ pub struct SellMarketRequest {
 #[derive(Serialize)]
 pub struct BuyMarketResponse {
     amount: Decimal,
-    commission: Decimal
+    commission: Decimal,
+    balance: Decimal
 }

@@ -13,7 +13,7 @@ use sea_orm::prelude::Decimal;
 use sea_orm::ColumnTrait;
 use sea_orm::{ActiveModelTrait, QueryFilter, Set};
 use sea_orm::{Condition, EntityTrait, IntoActiveModel};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[utoipa::path(
@@ -151,9 +151,11 @@ pub async fn order_sell(
     active_order.updated_at = Set(Utc::now().naive_utc());
     try_or_http_err!(active_order.update(state.db.as_ref()).await);
     
-    HttpResponse::Ok().json(CommonResponse::<()> {
+    HttpResponse::Ok().json(CommonResponse::<SellOrderResponse> {
         status: ResponseStatus::Ok,
-        data: (),
+        data: SellOrderResponse {
+            balance: new_balance
+        },
         error: None,
     })
 }
@@ -161,4 +163,10 @@ pub async fn order_sell(
 #[derive(Deserialize, ToSchema)]
 pub struct OrderSellInput {
     order_id: i32,
+}
+
+
+#[derive(Serialize)]
+pub struct SellOrderResponse {
+    balance: Decimal
 }
