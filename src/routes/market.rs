@@ -40,6 +40,18 @@ impl Actor for MarketWs {
         let db = self.state.db.clone();
         let cache = self.state.cache.clone();
         let addr = ctx.address();
+    
+        let _db = db.clone();
+        let _cache = cache.clone();
+        let _addr = ctx.address();
+        
+        tokio::spawn(async move {
+            let data = __get_price_changes(_db, _cache).await.unwrap_or_default();
+            let message_json = serde_json::to_string(&data).unwrap_or_default();
+
+            _addr.do_send(WebSocketMessage { message: message_json });
+        });
+        
         ctx.run_interval(Duration::from_secs(5), move |_, _ctx| {
             
             let db = db.clone();
@@ -123,11 +135,14 @@ async fn __get_price_changes(
 
         let prices: Vec<(String, f64)> = redis_conn
             .zrevrangebyscore_withscores(&key, now, day_ago)
-            .await
-            .expect("REASON");
+            .await?;
+        
+        let (first_price_data, _) = prices.first().unwrap().0.split_once(":").unwrap_or_default();
+        let (last_price_data, _) = prices.last().unwrap().0.split_once(":").unwrap_or_default();
+        
         if prices.is_empty() {}
-        let first_price = Decimal::from_str(&prices.first().unwrap().0).unwrap_or(Decimal::ZERO);
-        let last_price = Decimal::from_str(&prices.last().unwrap().0).unwrap_or(Decimal::ZERO);
+        let first_price = Decimal::from_str(&first_price_data).unwrap_or(Decimal::ZERO);
+        let last_price = Decimal::from_str(&last_price_data).unwrap_or(Decimal::ZERO);
 
         let change = if first_price != Decimal::ZERO {
             ((last_price - first_price) / first_price) * Decimal::from(100)
