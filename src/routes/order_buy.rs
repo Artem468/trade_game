@@ -92,7 +92,7 @@ pub async fn order_buy(
     active_seller_balance.amount = Set(new_balance);
     try_or_http_err!(active_seller_balance.update(state.db.as_ref()).await);
     
-    let new_balance = seller.balance + order.price;
+    let new_balance = (seller.balance + order.price).round_dp(3);
     let mut active_seller = seller.into_active_model();
     active_seller.balance = Set(new_balance);
     try_or_http_err!(active_seller.update(state.db.as_ref()).await);
