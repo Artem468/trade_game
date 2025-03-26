@@ -18,6 +18,7 @@ use std::time::Duration;
 #[derive(Serialize)]
 struct MarketData {
     symbol: String,
+    name: String,
     price: Decimal,
     trend: String,
     change_percent: Decimal,
@@ -162,6 +163,7 @@ async fn __get_price_changes(
             asset_id,
             MarketData {
                 symbol: asset.symbol,
+                name: asset.name,
                 price: last_price.round_dp(3),
                 trend: trend.to_string(),
                 change_percent: change.round_dp(2),
