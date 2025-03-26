@@ -22,3 +22,4 @@ pub mod get_events;
 pub mod get_bots;
 pub mod create_bot;
 pub mod get_user_place;
+pub mod get_chats;
