@@ -18,7 +18,7 @@ pub async fn seed_assets(db: &DbConn) -> Result<(), sea_orm::DbErr> {
         },
         price_snapshot::ActiveModel{
             asset_id: Set(2),
-            price: Set(Decimal::from(96_530)),
+            price: Set(Decimal::from(68)),
             .. Default::default()
         },
         price_snapshot::ActiveModel{

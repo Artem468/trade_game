@@ -17,8 +17,8 @@ pub async fn initialize_assets(db: &DbConn) -> Result<(), sea_orm::DbErr> {
             ..Default::default()
         },
         assets::ActiveModel {
-            symbol: Set("BTC".to_string()),
-            name: Set("Bitcoin".to_string()),
+            symbol: Set("QSR".to_string()),
+            name: Set("Burger King".to_string()),
             ..Default::default()
         },
         assets::ActiveModel {
