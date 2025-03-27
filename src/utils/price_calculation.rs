@@ -1,11 +1,11 @@
 use crate::traits::redis::PriceInfo;
 use chrono::Utc;
 use entity::prelude::{Assets, Orders};
-use entity::{assets, orders, price_snapshot, user_balances};
+use entity::{assets, orders, price_snapshot, trades, user_balances};
 use lazy_static::lazy_static;
 use redis::AsyncCommands;
 use sea_orm::prelude::Decimal;
-use sea_orm::{ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 use std::error::Error;
 use std::str::FromStr;
 use tokio::time::{interval, Duration};
@@ -74,7 +74,7 @@ async fn calculate_asset_price(
     }
 
     let old_price_value = old_price.price.unwrap();
-
+    
     let buy_orders: Vec<orders::Model> = Orders::find()
         .filter(orders::Column::AssetId.eq(asset_id))
         .filter(orders::Column::OrderType.eq("buy"))
@@ -89,25 +89,50 @@ async fn calculate_asset_price(
         .all(db)
         .await?;
 
-    let user_balances: Vec<user_balances::Model> = user_balances::Entity::find()
+    let total_held_balance: Option<Decimal> = user_balances::Entity::find()
         .filter(user_balances::Column::AssetId.eq(asset_id))
+        .select_only()
+        .column_as(user_balances::Column::Amount.sum(), "total")
+        .into_tuple()
+        .one(db)
+        .await?;
+
+    let total_held_balance: Decimal = total_held_balance.unwrap_or_default();
+    
+    let recent_trades: Vec<trades::Model> = trades::Entity::find()
+        .filter(trades::Column::AssetId.eq(asset_id))
+        .filter(trades::Column::CreatedAt.gte(Utc::now() - chrono::Duration::hours(24)))
         .all(db)
         .await?;
 
-    let total_held_balance: Decimal = user_balances.iter().map(|b| b.amount).sum();
+    let volume_bought: Decimal = recent_trades
+        .iter()
+        .filter(|t| t.trade_type == "buy")
+        .map(|t| t.amount)
+        .sum();
 
-    let v_buy: Decimal = buy_orders.iter().map(|o| o.amount).sum::<Decimal>();
-    let v_sell: Decimal = sell_orders.iter().map(|o| o.amount).sum::<Decimal>();
+    let volume_sold: Decimal = recent_trades
+        .iter()
+        .filter(|t| t.trade_type == "sell")
+        .map(|t| t.amount)
+        .sum();
+    
+    let v_buy: Decimal = buy_orders.iter().map(|o| o.amount).sum::<Decimal>()
+        + volume_bought;
 
-    let total_supply = v_buy + total_held_balance;
+    let v_sell: Decimal = sell_orders.iter().map(|o| o.amount).sum::<Decimal>()
+        + total_held_balance
+        + volume_sold;
 
-    let price_change = K.clone() * (v_buy - v_sell) / (total_supply + EPSILON.clone());
+    let total_supply = v_buy + EPSILON.clone();
+
+    let price_change = K.clone() * (v_buy - v_sell) / total_supply;
     let new_price = (old_price_value * (Decimal::from(1) + price_change)).round_dp(3);
 
     let key = format!("asset_price:{}", asset_id);
     let history_key = format!("asset_price_history:{}", asset_id);
     let timestamp = Utc::now().timestamp();
-
+    
     let _: () = redis_conn
         .hset_multiple(
             &key,
