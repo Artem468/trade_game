@@ -3,14 +3,11 @@ use crate::{try_or_http_err, AppState};
 use actix_web::{get, web, HttpResponse, Responder};
 use entity::events;
 use sea_orm::prelude::DateTime;
-use sea_orm::{EntityTrait, FromQueryResult, QuerySelect};
+use sea_orm::{EntityTrait, FromQueryResult, QueryOrder, QuerySelect};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-#[utoipa::path(
-    params(EventsQuery),
-    tag = "Market"
-)]
+#[utoipa::path(params(EventsQuery), tag = "Market")]
 #[get("/api/v1/events")]
 pub async fn get_events(
     state: web::Data<AppState>,
@@ -18,6 +15,7 @@ pub async fn get_events(
 ) -> impl Responder {
     let events_data = try_or_http_err!(
         events::Entity::find()
+            .order_by_desc(events::Column::CreatedAt)
             .limit(query.limit)
             .offset(query.offset)
             .into_model::<EventsResponse>()
