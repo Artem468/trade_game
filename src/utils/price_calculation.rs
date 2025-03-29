@@ -43,7 +43,6 @@ async fn update_all_asset_prices(db: &DbConn, redis_client: &redis::Client) -> R
     for handle in handles {
         let _ = handle.await;
     }
-
     Ok(())
 }
 
@@ -117,13 +116,26 @@ async fn calculate_asset_price(
 
     let v_buy: Decimal = buy_orders.iter().map(|o| o.amount).sum::<Decimal>() + volume_bought;
 
-    let v_sell: Decimal = sell_orders.iter().map(|o| o.amount).sum::<Decimal>() + total_held_balance + volume_sold;
+    let v_sell: Decimal =
+        sell_orders.iter().map(|o| o.amount).sum::<Decimal>() + total_held_balance + volume_sold;
 
     let total_supply = v_buy + EPSILON.clone();
+    let max_change = Decimal::from_f64_retain(0.05).ok_or("Can't parse")?;
+    let liquidity_factor = (v_buy + v_sell).max(Decimal::from(1));
+    let adaptive_k = K.clone() / (liquidity_factor / Decimal::from(2));
+    let price_change = (adaptive_k * (v_buy - v_sell) / total_supply).clamp(-max_change, max_change);
 
-    let price_change = K.clone() * (v_buy - v_sell) / total_supply;
+    let raw_price = (old_price_value * (Decimal::from(1) + price_change))
+        .max(Decimal::from_f64_retain(0.001).ok_or("Can't parse")?)
+        .round_dp(3);
 
-    let new_price = (old_price_value * (Decimal::from(1) + price_change)).round_dp(3);
+    let smoothing_factor = Decimal::from_f64_retain(0.2).ok_or("Can't parse")?;
+    let smoothed_price = (raw_price * smoothing_factor) + (old_price_value * (Decimal::from(1) - smoothing_factor));
+    
+    let volatility = Decimal::from_f64_retain(0.01).ok_or("Can't parse")?;
+    let random_factor = Decimal::from_f64_retain(rand::random::<f64>()).ok_or("Can't parse")?;
+    let volatility_adjustment = (random_factor - Decimal::from_f64_retain(0.5).ok_or("Can't parse")?) * volatility;
+    let final_price = smoothed_price * (Decimal::from(1) + volatility_adjustment);
 
     let key = format!("asset_price:{}", asset_id);
     let history_key = format!("asset_price_history:{}", asset_id);
@@ -133,7 +145,7 @@ async fn calculate_asset_price(
         .hset_multiple(
             &key,
             &[
-                ("price", &new_price.to_string()),
+                ("price", &final_price.to_string()),
                 ("created_at", &Utc::now().to_rfc3339()),
             ],
         )
@@ -142,7 +154,7 @@ async fn calculate_asset_price(
     let _: () = redis_conn
         .zadd(
             &history_key,
-            &format!("{}:{}", new_price.to_string(), timestamp),
+            &format!("{}:{}", final_price.to_string(), timestamp),
             timestamp,
         )
         .await?;

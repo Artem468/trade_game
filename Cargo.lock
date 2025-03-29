@@ -3500,6 +3500,7 @@ dependencies = [
  "jsonwebtoken",
  "lazy_static",
  "migration",
+ "rand",
  "rand_core",
  "redis",
  "sea-orm",
