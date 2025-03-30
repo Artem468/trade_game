@@ -1,25 +1,18 @@
-use crate::utils::jwt::AccessToken;
 use crate::utils::response::{CommonResponse, ResponseStatus};
 use crate::{try_or_http_err, AppState};
+use actix_web::web::Query;
 use actix_web::{get, web, HttpResponse, Responder};
 use entity::users;
 use sea_orm::prelude::{DateTime, Decimal};
 use sea_orm::EntityTrait;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
 
-#[utoipa::path(
-    tag = "User",
-    security(
-        ("bearer_token" = [])
-    )
-)]
+#[utoipa::path(params(UserIdQuery), tag = "User")]
 #[get("/api/v1/users/info")]
-pub async fn user_info(
-    state: web::Data<AppState>,
-    token: AccessToken
-) -> impl Responder {
+pub async fn user_info(state: web::Data<AppState>, query: Query<UserIdQuery>) -> impl Responder {
     match try_or_http_err!(
-        users::Entity::find_by_id(token.0.claims.sub)
+        users::Entity::find_by_id(query.user_id)
             .one(state.db.as_ref())
             .await
     ) {
@@ -49,4 +42,9 @@ pub struct UserResponse {
     pub email: String,
     pub balance: Decimal,
     pub created_at: DateTime,
+}
+
+#[derive(Deserialize, ToSchema, IntoParams)]
+pub struct UserIdQuery {
+    pub user_id: i32,
 }
