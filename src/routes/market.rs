@@ -41,32 +41,34 @@ impl Actor for MarketWs {
         let db = self.state.db.clone();
         let cache = self.state.cache.clone();
         let addr = ctx.address();
-    
+
         let _db = db.clone();
         let _cache = cache.clone();
         let _addr = ctx.address();
-        
+
         tokio::spawn(async move {
             let data = __get_price_changes(_db, _cache).await.unwrap_or_default();
             let message_json = serde_json::to_string(&data).unwrap_or_default();
 
-            _addr.do_send(WebSocketMessage { message: message_json });
+            _addr.do_send(WebSocketMessage {
+                message: message_json,
+            });
         });
-        
+
         ctx.run_interval(Duration::from_secs(5), move |_, _ctx| {
-            
             let db = db.clone();
             let cache = cache.clone();
             let addr = addr.clone();
-            
+
             tokio::spawn(async move {
                 let data = __get_price_changes(db, cache).await.unwrap_or_default();
                 let message_json = serde_json::to_string(&data).unwrap_or_default();
 
-                addr.do_send(WebSocketMessage { message: message_json });
+                addr.do_send(WebSocketMessage {
+                    message: message_json,
+                });
             });
         });
-
     }
 }
 
@@ -86,7 +88,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MarketWs {
     }
 }
 
-#[utoipa::path(tag="Market")]
+#[utoipa::path(tag = "Market")]
 #[get("/api/v1/market/data")]
 pub(crate) async fn market(
     req: HttpRequest,
@@ -94,24 +96,33 @@ pub(crate) async fn market(
     state: web::Data<AppState>,
 ) -> Result<HttpResponse, ActixError> {
     if ws::handshake(&req).is_ok() {
-        return Ok(ws::start(MarketWs { state: state.into_inner() }, &req, stream)?);
+        return Ok(ws::start(
+            MarketWs {
+                state: state.into_inner(),
+            },
+            &req,
+            stream,
+        )?);
     }
     let data = __get_price_changes(state.as_ref().db.clone(), state.as_ref().cache.clone()).await;
 
     match data {
-        Ok(prices) => Ok(HttpResponse::Ok().json(CommonResponse::<HashMap<String, MarketData>> {
-            status: ResponseStatus::Ok,
-            data: prices,
-            error: None,
-        })),
-        Err(e) => Ok(HttpResponse::InternalServerError().json(CommonResponse::<HashMap<String, MarketData>> {
+        Ok(prices) => Ok(
+            HttpResponse::Ok().json(CommonResponse::<HashMap<String, MarketData>> {
+                status: ResponseStatus::Ok,
+                data: prices,
+                error: None,
+            }),
+        ),
+        Err(e) => Ok(HttpResponse::InternalServerError().json(CommonResponse::<
+            HashMap<String, MarketData>,
+        > {
             status: ResponseStatus::Error,
             data: HashMap::new(),
             error: Some(e.to_string()),
         })),
     }
 }
-
 
 async fn __get_price_changes(
     db: Arc<DbConn>,
@@ -137,20 +148,29 @@ async fn __get_price_changes(
         let prices: Vec<(String, f64)> = redis_conn
             .zrevrangebyscore_withscores(&key, now, day_ago)
             .await?;
-        
-        let (first_price_data, _) = prices.first().unwrap().0.split_once(":").unwrap_or_default();
-        let (last_price_data, _) = prices.last().unwrap().0.split_once(":").unwrap_or_default();
-        
+
+        let (first_price_data, _) = prices
+            .first()
+            .unwrap()
+            .0
+            .split_once(":")
+            .unwrap_or_default();
+        let (last_price_data, _) = prices
+            .last()
+            .unwrap()
+            .0
+            .split_once(":")
+            .unwrap_or_default();
         if prices.is_empty() {}
         let first_price = Decimal::from_str(&first_price_data).unwrap_or(Decimal::ZERO);
         let last_price = Decimal::from_str(&last_price_data).unwrap_or(Decimal::ZERO);
 
         let change = if first_price != Decimal::ZERO {
-            ((last_price - first_price) / first_price) * Decimal::from(100)
+            (((last_price - first_price) / first_price) * Decimal::from(100)).abs()
         } else {
             Decimal::ZERO
         };
-
+        
         let trend = if last_price > first_price {
             "up"
         } else if last_price < first_price {
