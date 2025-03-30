@@ -12,7 +12,7 @@ pub async fn price_history(
     state: web::Data<AppState>,
     path: web::Path<PricePath>,
 ) -> impl Responder {
-    let day_ago = Utc::now().timestamp() - 86400;
+    let day_ago = Utc::now().timestamp() - 3600;
     let mut redis_conn = try_or_http_err!(state.cache.get_multiplexed_async_connection().await);
     let history: Vec<(String, i64)> = try_or_http_err!(
         redis_conn

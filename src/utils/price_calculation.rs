@@ -145,7 +145,7 @@ async fn calculate_asset_price(
         .hset_multiple(
             &key,
             &[
-                ("price", &final_price.to_string()),
+                ("price", &final_price.round_dp(3).to_string()),
                 ("created_at", &Utc::now().to_rfc3339()),
             ],
         )
@@ -154,7 +154,7 @@ async fn calculate_asset_price(
     let _: () = redis_conn
         .zadd(
             &history_key,
-            &format!("{}:{}", final_price.to_string(), timestamp),
+            &format!("{}:{}", final_price.round_dp(3), timestamp),
             timestamp,
         )
         .await?;
