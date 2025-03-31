@@ -12,6 +12,8 @@ use crate::utils::price_calculation::calculate_asset_prices;
 use crate::utils::prices_snapshot::save_prices_to_db;
 use crate::utils::seed_assets::seed_assets;
 use actix::Addr;
+use actix_cors::Cors;
+use actix_files;
 use actix_web::{web, App, HttpServer};
 use dotenv::dotenv;
 use lazy_static::lazy_static;
@@ -165,7 +167,9 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             );
         }
 
-        app
+        app.service(actix_files::Files::new("/", "./web_view/dist")
+            .index_file("index.html"))
+            .wrap(Cors::permissive())
     })
     .bind(format!("{host}:{port}"))?
     .run()

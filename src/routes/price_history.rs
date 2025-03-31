@@ -32,7 +32,7 @@ pub async fn price_history(
                 if let Some((price, timestamp)) = item.split_once(":") {
                     Some(PriceResponse {
                         price: price.into(),
-                        timestamp: timestamp.into(),
+                        timestamp: timestamp.parse().ok()?,
                     })
                 } else {
                     None
@@ -51,5 +51,5 @@ pub struct PricePath {
 #[derive(Serialize)]
 pub struct PriceResponse {
     price: String,
-    timestamp: String,
+    timestamp: i64,
 }
