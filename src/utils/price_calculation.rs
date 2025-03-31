@@ -140,7 +140,8 @@ async fn calculate_asset_price(
     let key = format!("asset_price:{}", asset_id);
     let history_key = format!("asset_price_history:{}", asset_id);
     let timestamp = Utc::now().timestamp();
-
+    let minute_timestamp = timestamp / 60 * 60;
+    
     let _: () = redis_conn
         .hset_multiple(
             &key,
@@ -151,14 +152,33 @@ async fn calculate_asset_price(
         )
         .await?;
 
-    let _: () = redis_conn
-        .zadd(
-            &history_key,
-            &format!("{}:{}", final_price.round_dp(3), timestamp),
-            timestamp,
-        )
-        .await?;
+    let last_history_entry: Option<String> = redis_conn
+        .zrevrangebyscore_limit::<_, _, _, Vec<String>>(&history_key, "+inf", "-inf", 0, 1)
+        .await?
+        .into_iter()
+        .next();
+    
+    let should_update = match last_history_entry {
+        Some(entry) => {
+            let parts: Vec<&str> = entry.split(':').collect();
+            if parts.len() == 2 {
+                parts[1].parse::<i64>()? < minute_timestamp
+            } else {
+                true
+            }
+        }
+        None => true,
+    };
 
+    if should_update {
+        let _: () = redis_conn
+            .zadd(
+                &history_key,
+                &format!("{}:{}", final_price.round_dp(3), timestamp),
+                minute_timestamp,
+            )
+            .await?;
+    }
     let day_ago = Utc::now().timestamp() - 86400;
     let _: () = redis_conn
         .zrembyscore(&history_key, "-inf", day_ago)
