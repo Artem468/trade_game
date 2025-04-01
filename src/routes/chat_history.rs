@@ -33,18 +33,28 @@ pub async fn chat_history(
             messages::Entity::find()
                 .filter(
                     Condition::any()
-                        .add(
-                            Condition::all()
+                        .add({
+                            let cond = Condition::all()
                                 .add(messages::Column::FromId.eq(user.id))
-                                .add(messages::Column::RecipientId.eq(params.user_id))
-                                .add(messages::Column::Id.lt(query.before_message_id))
-                        )
-                        .add(
-                            Condition::all()
+                                .add(messages::Column::RecipientId.eq(params.user_id));
+
+                            if let Some(before) = query.before_message_id {
+                                cond.add(messages::Column::Id.lt(before))
+                            } else {
+                                cond
+                            }
+                        })
+                        .add({
+                            let cond = Condition::all()
                                 .add(messages::Column::RecipientId.eq(user.id))
-                                .add(messages::Column::FromId.eq(params.user_id))
-                                .add(messages::Column::Id.lt(query.before_message_id))
-                        ),
+                                .add(messages::Column::FromId.eq(params.user_id));
+                    
+                            if let Some(before) = query.before_message_id {
+                                cond.add(messages::Column::Id.lt(before))
+                            } else {
+                                cond
+                            }
+                        })
                 )
                 .column_as(messages::Column::Id, "message_id")
                 .order_by_desc(messages::Column::CreatedAt)
@@ -80,7 +90,7 @@ pub struct ChatMsg {
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]
 pub struct HistoryQuery {
     pub limit: u64,
-    pub before_message_id: i32
+    pub before_message_id: Option<i32>,
 }
 
 #[derive(Deserialize, ToSchema, IntoParams)]
