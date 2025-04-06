@@ -4,7 +4,7 @@ use actix_web::{get, web, HttpResponse, Responder};
 use entity::{assets, user_balances, users};
 use sea_orm::prelude::{Decimal, Expr};
 use sea_orm::QueryFilter;
-use sea_orm::{ColumnTrait, Condition, EntityTrait, FromQueryResult, QuerySelect};
+use sea_orm::{ColumnTrait, EntityTrait, FromQueryResult, QuerySelect};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
@@ -27,11 +27,7 @@ pub async fn user_assets(state: web::Data<AppState>, path: web::Path<AssetQuery>
                     Expr::col((user_balances::Entity, user_balances::Column::Amount)).if_null(0),
                     "amount"
                 )
-                .filter(
-                    Condition::any()
-                        .add(user_balances::Column::UserId.eq(user.id))
-                        .add(user_balances::Column::UserId.is_null()),
-                )
+                .filter(user_balances::Column::UserId.eq(user.id))
                 .into_model::<AssetWithBalance>()
                 .all(state.db.as_ref())
                 .await
