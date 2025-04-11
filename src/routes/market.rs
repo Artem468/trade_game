@@ -170,7 +170,7 @@ async fn __get_price_changes(
         } else {
             Decimal::ZERO
         };
-        
+
         let trend = if last_price > first_price {
             "up"
         } else if last_price < first_price {

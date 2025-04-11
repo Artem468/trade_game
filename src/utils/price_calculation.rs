@@ -1,11 +1,11 @@
 use crate::traits::redis::PriceInfo;
 use chrono::Utc;
-use entity::prelude::{Assets, Orders};
-use entity::{assets, orders, price_snapshot, trades, user_balances};
+use entity::prelude::Assets;
+use entity::{assets, price_snapshot};
 use lazy_static::lazy_static;
 use redis::AsyncCommands;
-use sea_orm::prelude::{Decimal, Expr};
-use sea_orm::{ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
+use sea_orm::prelude::Decimal;
+use sea_orm::{ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter, QueryOrder};
 use std::error::Error;
 use std::str::FromStr;
 use tokio::time::{interval, Duration};
@@ -72,70 +72,25 @@ async fn calculate_asset_price(
     }
 
     let old_price_value = old_price.price.unwrap();
+    let max_change_percent = Decimal::from_f64_retain(0.01).ok_or("Can't parse")?; // ±1%
+    let continue_trend_chance = 0.7;
+    
+    let mut current_trend_up = rand::random::<bool>();
+    
+    let trend_roll: f64 = rand::random();
+    if trend_roll >= continue_trend_chance {
+        current_trend_up = !current_trend_up;
+    }
 
-    let buy_orders: Vec<orders::Model> = Orders::find()
-        .filter(orders::Column::AssetId.eq(asset_id))
-        .filter(orders::Column::OrderType.eq("buy"))
-        .filter(orders::Column::Status.eq("pending"))
-        .all(db)
-        .await?;
-
-    let sell_orders: Vec<orders::Model> = Orders::find()
-        .filter(orders::Column::AssetId.eq(asset_id))
-        .filter(orders::Column::OrderType.eq("sell"))
-        .filter(orders::Column::Status.eq("pending"))
-        .all(db)
-        .await?;
-
-    let total_held_balance: Decimal = user_balances::Entity::find()
-        .filter(user_balances::Column::AssetId.eq(asset_id))
-        .select_only()
-        .column_as(Expr::cust("COALESCE(SUM(amount), 0)"), "total")
-        .into_tuple()
-        .one(db)
-        .await?
-        .unwrap_or(Decimal::ZERO);
-
-    let recent_trades: Vec<trades::Model> = trades::Entity::find()
-        .filter(trades::Column::AssetId.eq(asset_id))
-        .filter(trades::Column::CreatedAt.gte(Utc::now() - chrono::Duration::hours(24)))
-        .all(db)
-        .await?;
-
-    let volume_bought: Decimal = recent_trades
-        .iter()
-        .filter(|t| t.trade_type == "buy")
-        .map(|t| t.amount)
-        .sum();
-
-    let volume_sold: Decimal = recent_trades
-        .iter()
-        .filter(|t| t.trade_type == "sell")
-        .map(|t| t.amount)
-        .sum();
-
-    let v_buy: Decimal = buy_orders.iter().map(|o| o.amount).sum::<Decimal>() + volume_bought;
-
-    let v_sell: Decimal =
-        sell_orders.iter().map(|o| o.amount).sum::<Decimal>() + total_held_balance + volume_sold;
-
-    let total_supply = v_buy + EPSILON.clone();
-    let max_change = Decimal::from_f64_retain(0.05).ok_or("Can't parse")?;
-    let liquidity_factor = (v_buy + v_sell).max(Decimal::from(1));
-    let adaptive_k = K.clone() / (liquidity_factor / Decimal::from(2));
-    let price_change = (adaptive_k * (v_buy - v_sell) / total_supply).clamp(-max_change, max_change);
-
-    let raw_price = (old_price_value * (Decimal::from(1) + price_change))
+    let magnitude: f64 = rand::random();
+    let direction = if current_trend_up { 1.0 } else { -1.0 };
+    let rand_change = direction * magnitude;
+    let change_factor = Decimal::from_f64_retain(rand_change).ok_or("Can't parse")? * max_change_percent;
+    
+    let final_price = (old_price_value * (Decimal::from(1) + change_factor))
         .max(Decimal::from_f64_retain(0.001).ok_or("Can't parse")?)
         .round_dp(3);
 
-    let smoothing_factor = Decimal::from_f64_retain(0.2).ok_or("Can't parse")?;
-    let smoothed_price = (raw_price * smoothing_factor) + (old_price_value * (Decimal::from(1) - smoothing_factor));
-    
-    let volatility = Decimal::from_f64_retain(0.01).ok_or("Can't parse")?;
-    let random_factor = Decimal::from_f64_retain(rand::random::<f64>()).ok_or("Can't parse")?;
-    let volatility_adjustment = (random_factor - Decimal::from_f64_retain(0.5).ok_or("Can't parse")?) * volatility;
-    let final_price = smoothed_price * (Decimal::from(1) + volatility_adjustment);
 
     let key = format!("asset_price:{}", asset_id);
     let history_key = format!("asset_price_history:{}", asset_id);
