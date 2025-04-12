@@ -28,7 +28,7 @@ pub async fn order_create(
         OrderType::Buy => {
             let order_id = try_or_http_err!(
                 __create_buy_order(
-                    token.0.claims.sub,
+                    token.claims.sub,
                     input.asset_id,
                     try_or_http_err!(Decimal::from_f64_retain(input.amount).ok_or("Wrong amount")).round_dp(3),
                     try_or_http_err!(Decimal::from_f64_retain(input.price).ok_or("Wrong price")).round_dp(3),
@@ -45,7 +45,7 @@ pub async fn order_create(
         OrderType::Sell => {
             let order_id = try_or_http_err!(
                 __create_sell_order(
-                    token.0.claims.sub,
+                    token.claims.sub,
                     input.asset_id,
                     try_or_http_err!(Decimal::from_f64_retain(input.amount).ok_or("Wrong amount")).round_dp(3),
                     try_or_http_err!(Decimal::from_f64_retain(input.price).ok_or("Wrong price")).round_dp(3),

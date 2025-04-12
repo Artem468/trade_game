@@ -31,7 +31,7 @@ pub async fn order_cancel(
             .await
     ) {
         Some(order) => {
-            if order.user_id != token.0.claims.sub {
+            if order.user_id != token.claims.sub {
                 return HttpResponse::BadRequest().json(CommonResponse::<()> {
                     status: ResponseStatus::Error,
                     data: (),

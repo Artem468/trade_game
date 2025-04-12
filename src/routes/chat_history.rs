@@ -24,7 +24,7 @@ pub async fn chat_history(
     query: web::Query<HistoryQuery>,
 ) -> impl Responder {
     let user_data = try_or_http_err!(
-        users::Entity::find_by_id(token.0.claims.sub)
+        users::Entity::find_by_id(token.claims.sub)
             .one(state.db.as_ref())
             .await
     );

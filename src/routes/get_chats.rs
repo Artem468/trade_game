@@ -15,7 +15,7 @@ use serde::Serialize;
 )]
 #[get("/api/v1/chats/list")]
 pub async fn get_chats(state: web::Data<AppState>, token: AccessToken) -> impl Responder {
-    let user_id = token.0.claims.sub;
+    let user_id = token.claims.sub;
 
     let users_list = try_or_http_err!(
         messages::Entity::find()

@@ -53,7 +53,7 @@ pub async fn chat_ws(
     state: web::Data<AppState>,
     token: AccessToken,
 ) -> Result<HttpResponse, Error> {
-    match users::Entity::find_by_id(token.0.claims.sub).one(state.db.as_ref()).await
+    match users::Entity::find_by_id(token.claims.sub).one(state.db.as_ref()).await
     {
         Ok(data) => match data {
             Some(user) => {

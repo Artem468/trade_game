@@ -36,7 +36,7 @@ pub async fn order_buy(
         "No order with this ID"
     );
 
-    if order.user_id == token.0.claims.sub {
+    if order.user_id == token.claims.sub {
         return HttpResponse::BadRequest().json(CommonResponse::<()> {
             status: ResponseStatus::Error,
             data: (),
@@ -64,7 +64,7 @@ pub async fn order_buy(
         user_balances::Entity::find()
             .filter(
                 Condition::all()
-                    .add(user_balances::Column::UserId.eq(token.0.claims.sub))
+                    .add(user_balances::Column::UserId.eq(token.claims.sub))
                     .add(user_balances::Column::AssetId.eq(order.asset_id))
             )
             .one(state.db.as_ref())
@@ -81,7 +81,7 @@ pub async fn order_buy(
     }
 
     let seller = extract_db_response_or_http_err_with_opt_msg!(
-        users::Entity::find_by_id(token.0.claims.sub)
+        users::Entity::find_by_id(token.claims.sub)
             .one(state.db.as_ref())
             .await,
         "Seller is not exist"
@@ -133,7 +133,7 @@ pub async fn order_buy(
     }
 
     let _ = trades::ActiveModel {
-        user_id: Set(token.0.claims.sub),
+        user_id: Set(token.claims.sub),
         asset_id: Set(order.asset_id),
         trade_type: Set("sell".into()),
         price: Set(order.price),

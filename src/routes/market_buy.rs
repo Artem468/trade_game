@@ -25,7 +25,7 @@ pub async fn market_buy(
     input: web::Json<BuyMarketRequest>,
     token: AccessToken,
 ) -> impl Responder {
-    let user_id = token.0.claims.sub;
+    let user_id = token.claims.sub;
 
     let current_price = try_or_http_err!(get_price_by_asset_id(&state.cache, input.asset_id).await);
     let amount_to_buy = Decimal::from_f64_retain(input.amount).unwrap_or_default();
