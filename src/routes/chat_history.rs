@@ -57,7 +57,7 @@ pub async fn chat_history(
                         })
                 )
                 .column_as(messages::Column::Id, "message_id")
-                .order_by_desc(messages::Column::CreatedAt)
+                .order_by_asc(messages::Column::CreatedAt)
                 .limit(query.limit)
                 .into_model::<ChatMsg>()
                 .all(state.db.as_ref())
