@@ -132,7 +132,7 @@ async fn __get_price_changes(
     let keys: Vec<String> = redis_conn.keys("asset_price_history:*").await?;
 
     let now = Utc::now().timestamp();
-    let day_ago = now - 86400;
+    let day_ago = now - 3600;
     let mut result = HashMap::new();
 
     for key in keys {
@@ -150,18 +150,18 @@ async fn __get_price_changes(
             .await?;
 
         let (first_price_data, _) = prices
-            .first()
-            .unwrap()
-            .0
-            .split_once(":")
-            .unwrap_or_default();
-        let (last_price_data, _) = prices
             .last()
             .unwrap()
             .0
             .split_once(":")
             .unwrap_or_default();
-        if prices.is_empty() {}
+        let (last_price_data, _) = prices
+            .first()
+            .unwrap()
+            .0
+            .split_once(":")
+            .unwrap_or_default();
+        
         let first_price = Decimal::from_str(&first_price_data).unwrap_or(Decimal::ZERO);
         let last_price = Decimal::from_str(&last_price_data).unwrap_or(Decimal::ZERO);
 

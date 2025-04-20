@@ -43,7 +43,7 @@ function App() {
     const chartOptions: ApexOptions = {
         chart: {
             fontFamily: `inherit`,
-            foreColor: "#adb0bb",
+            background: searchParams.get("is_dark") === "true" ? "#212121": "#ffffff",
             zoom: {
                 enabled: false,
             },
@@ -75,17 +75,11 @@ function App() {
         xaxis: {
             type: "datetime",
             axisBorder: {
-                color: "rgba(173,181,189,0.3)",
+                color: searchParams.get("is_dark") === "true" ? "#adb0bb" : "#212121",
             },
             labels: {
-                datetimeFormatter: {
-                    year: 'yyyy',
-                    month: "MMMM yyyy",
-                    day: 'dd MMMM',
-                    hour: 'HH:mm',
-                    minute: 'HH:mm:ss',
-                    second: 'HH:mm:ss',
-                }
+                datetimeUTC: false,
+                show: false
             }
         },
         yaxis: {
@@ -104,7 +98,7 @@ function App() {
             theme: "dark",
             fillSeriesColor: false,
             x: {
-                format: "dd.MM.yyyy",
+                format: "HH:mm",
             },
         },
     };
@@ -116,7 +110,7 @@ function App() {
             if (!groupedData["Цена"]) {
                 groupedData["Цена"] = [];
             }
-            groupedData["Цена"].push({x: timestamp, y: Number(price)});
+            groupedData["Цена"].push({x: timestamp * 1000, y: Number(price)});
         });
 
         return Object.entries(groupedData)
