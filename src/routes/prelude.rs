@@ -22,3 +22,4 @@ pub use super::create_bot;
 pub use super::get_bots;
 pub use super::get_user_place;
 pub use super::get_chats;
+pub use super::recover_account;

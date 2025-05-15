@@ -1,0 +1,14 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.dark {
+    background: #212121;
+    padding-bottom: 20px;
+}
+
+.light {
+    background: #ffffff;
+    padding-bottom: 20px;
+}

@@ -99,7 +99,7 @@ function App() {
             fillSeriesColor: false,
             x: {
                 format: "HH:mm",
-            },
+            }
         },
     };
 
@@ -117,11 +117,10 @@ function App() {
             .map(([name, data]) => ({name, data}));
     }
 
-    console.log(dataLineToView())
-
     return (
         <>
             <Chart
+                className={searchParams.get("is_dark") === "true" ? "dark": "light"}
                 options={chartOptions}
                 series={dataLineToView()}
                 type="area"

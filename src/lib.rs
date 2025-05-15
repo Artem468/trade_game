@@ -8,6 +8,7 @@ use crate::routes::prelude::*;
 use crate::routes::private_chat::ChatSession;
 use crate::utils::establish_connection::establish_connection;
 use crate::utils::init_assets::initialize_assets;
+use crate::utils::limited_list_with_timeout::LimitedListWithTimeout;
 use crate::utils::price_calculation::calculate_asset_prices;
 use crate::utils::prices_snapshot::save_prices_to_db;
 use crate::utils::seed_assets::seed_assets;
@@ -22,7 +23,7 @@ use sea_orm::prelude::Decimal;
 use sea_orm::DbConn;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 use tokio::task;
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::{Modify, OpenApi};
@@ -34,12 +35,16 @@ lazy_static! {
     static ref COMMISSION_MARKET_SELL: Decimal = Decimal::from_f64_retain(0.1).unwrap();
     static ref COMMISSION_ORDER_BUY: Decimal = Decimal::from_f64_retain(0.1).unwrap();
     static ref COMMISSION_ORDER_SELL: Decimal = Decimal::from_f64_retain(0.1).unwrap();
+    static ref RECOVERSTORAGE: Mutex<HashMap<i32, LimitedListWithTimeout<i32>>> =
+        Mutex::new(HashMap::new());
 }
 
 struct AppState {
     db: Arc<DbConn>,
     cache: Arc<Client>,
     jwt_secret: String,
+    recover_from: String,
+    recover_password: String,
 }
 
 pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
@@ -50,6 +55,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         std::env::var("REDIS_URL").expect("REDIS_URL must be set"),
     )?);
     let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let recover_from = std::env::var("RECOVER_FROM").expect("RECOVER_FROM must be set");
+    let recover_password = std::env::var("RECOVER_PASSWORD").expect("RECOVER_PASSWORD must be set");
 
     initialize_assets(db.as_ref()).await?;
     seed_assets(db.as_ref()).await?;
@@ -69,6 +76,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         db,
         cache,
         jwt_secret,
+        recover_from,
+        recover_password,
     });
 
     #[derive(OpenApi)]
@@ -100,6 +109,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             get_bots::get_bots,
             get_user_place::get_user_place,
             get_chats::get_chats,
+            recover_account::recover_account,
         ),
         modifiers(&SecurityAddon),
         tags(
@@ -158,7 +168,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .service(create_bot::create_bot)
             .service(get_bots::get_bots)
             .service(get_user_place::get_user_place)
-            .service(get_chats::get_chats);
+            .service(get_chats::get_chats)
+            .service(recover_account::recover_account);
 
         if cfg!(feature = "docs") {
             app = app.service(
@@ -167,8 +178,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             );
         }
 
-        app.service(actix_files::Files::new("/", "./web_view/dist")
-            .index_file("index.html"))
+        app.service(actix_files::Files::new("/", "./web_view/dist").index_file("index.html"))
             .wrap(Cors::permissive())
     })
     .bind(format!("{host}:{port}"))?
