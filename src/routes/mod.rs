@@ -24,3 +24,5 @@ pub mod create_bot;
 pub mod get_user_place;
 pub mod get_chats;
 pub mod recover_account;
+pub mod check_recover_code;
+pub mod change_password;

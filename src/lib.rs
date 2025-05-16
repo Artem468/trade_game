@@ -110,6 +110,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             get_user_place::get_user_place,
             get_chats::get_chats,
             recover_account::recover_account,
+            check_recover_code::check_recover_code,
+            change_password::change_password,
         ),
         modifiers(&SecurityAddon),
         tags(
@@ -169,7 +171,9 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             .service(get_bots::get_bots)
             .service(get_user_place::get_user_place)
             .service(get_chats::get_chats)
-            .service(recover_account::recover_account);
+            .service(recover_account::recover_account)
+            .service(check_recover_code::check_recover_code)
+            .service(change_password::change_password);
 
         if cfg!(feature = "docs") {
             app = app.service(

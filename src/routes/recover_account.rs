@@ -10,18 +10,18 @@ use lettre::transport::smtp::authentication::Credentials;
 use lettre::{Message, SmtpTransport, Transport};
 use rand::Rng;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::error::Error;
 use utoipa::ToSchema;
 
 #[utoipa::path(
-    request_body = RecoverInput,
+    request_body = RecoverEmailInput,
     tag="Authorization"
 )]
-#[post("/api/v1/auth/recover")]
+#[post("/api/v1/recover/send")]
 pub async fn recover_account(
     state: web::Data<AppState>,
-    input: web::Json<RecoverInput>,
+    input: web::Json<RecoverEmailInput>,
 ) -> impl Responder {
     let input = input.into_inner();
 
@@ -61,9 +61,9 @@ pub async fn recover_account(
         state.recover_from.as_str(),
         state.recover_password.as_str(),
     ) {
-        Ok(_) => HttpResponse::Ok().json(CommonResponse::<RecoverResponse> {
+        Ok(_) => HttpResponse::Ok().json(CommonResponse::<()> {
             status: ResponseStatus::Ok,
-            data: RecoverResponse { code },
+            data: (),
             error: None,
         }),
         Err(err) => HttpResponse::InternalServerError().json(CommonResponse::<()> {
@@ -144,11 +144,6 @@ fn send_main(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct RecoverInput {
+pub struct RecoverEmailInput {
     email: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct RecoverResponse {
-    code: i32,
 }

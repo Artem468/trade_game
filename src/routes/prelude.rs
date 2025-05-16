@@ -23,3 +23,5 @@ pub use super::get_bots;
 pub use super::get_user_place;
 pub use super::get_chats;
 pub use super::recover_account;
+pub use super::check_recover_code;
+pub use super::change_password;
